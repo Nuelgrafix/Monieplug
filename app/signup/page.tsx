@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const LoginUI = () => {
+const SignupUI = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -16,7 +16,7 @@ const LoginUI = () => {
           <div className='w-full max-w-[422px] h-[220px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
             <Image 
               src="/generated-image-1.png" 
-              alt="Login Image" 
+              alt="Signup Image" 
               width={422} 
               height={540}
               className='w-full sm:w-[422px] h-[220px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
@@ -30,7 +30,7 @@ const LoginUI = () => {
             />
           </div>
           <div className='w-full max-w-[422px] sm:p-5 h-auto sm:h-[457px] mx-auto flex flex-col justify-center items-center gap-4 sm:px-8'>
-            <h2 className='text-[#333333] text-[18px] sm:text-[24px] md:text-[28px] lg:text-[30px] font-bold mb-2'>Sign in to your account</h2>
+            <h2 className='text-[#333333] text-[18px] sm:text-[24px] md:text-[28px] lg:text-[30px] font-bold mb-2'>Create a Monieplug account.</h2>
             <div className='w-full space-y-3'>
               <input 
                 type="email" 
@@ -51,17 +51,17 @@ const LoginUI = () => {
                 </button>
               </div>
             </div>
-            <button className='w-full bg-[#1843E2] flex justify-center items-center gap-2 hover:bg-[#4060E8] transition-colors text-[18px] border-solid border-2 border-[#1843E2] h-[50px] sm:h-[60px] rounded-[8px] text-white py-2 text-sm font-semibold'>
+            <button className='w-full bg-[#1843E2] flex justify-center items-center gap-2 hover:bg-[#4060E8] transition-colors text-[18px] border-solid border-2 border-[#1843E2] max-h-[60px] rounded-[8px] text-white py-2 text-sm font-semibold'>
               Continue
             </button>
             <div className='flex items-center gap-4 w-[30px] mx-auto sm:w-[40px] my-2'>
               <div className='flex-1 h-px bg-gray-300'></div>
             </div>
-            <button className='w-full max-h-[50px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
+            <button className='w-full max-h-[60px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
               <Image src="/google.png" alt="Google Icon" width={20} height={20} />
             </button>
             <p className='text-[13px] sm:text-[14px] text-gray-600 mt-2 text-center'>
-              Don't have an account? <Link href="/signup" className='text-[#5075FF] hover:underline'>Sign up</Link>
+              Already have an account? <Link href="/" className='text-[#5075FF] hover:underline'>Sign in</Link>
             </p>
           </div>
         </div>
@@ -75,7 +75,7 @@ const LoginUI = () => {
             <div className='w-full max-w-[422px] h-[220px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
             <Image 
               src="/generated-image-1.png" 
-              alt="Login Image" 
+              alt="Signup Image" 
               width={422} 
               height={540}
               className='w-full sm:w-[422px] h-[220px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
@@ -92,19 +92,21 @@ const LoginUI = () => {
 
             {/* Sign in form */}
             <div className='w-full px-2'>
-              <h2 className='text-[#333333] text-[20px] xs:text-[22px] sm:text-[24px] md:text-[28px] lg:text-[32px] font-bold mb-2 text-center'>Sign in to your account</h2>
+              <h2 className='text-[#333333] 
+              text-[20px] xs:text-[22px] sm:text-[24px] md:text-[28px] 
+              lg:text-[32px] font-bold mb-2'>Create a Monieplug account.</h2>
               
               <div className='w-full space-y-4'>
                 <input 
                   type="email" 
                   placeholder="Continue with email"
-                  className='w-full h-[44px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                  className='w-full max-h-[44px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
                 />
                 <div className='relative'>
                   <input 
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
-                    className='w-full h-[44px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                    className='w-full max-h-[44px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
                   />
                   <button 
                     onClick={() => setShowPassword(!showPassword)}
@@ -115,19 +117,19 @@ const LoginUI = () => {
                 </div>
               </div>
 
-              <button className='w-full bg-[#1843E2] hover:bg-[#4060E8] transition-colors h-[48px] rounded-[8px] text-white text-[16px] font-semibold mt-6'>
+              <button className='w-full bg-[#1843E2] hover:bg-[#4060E8] transition-colors max-h-[48px] rounded-[8px] text-white text-[16px] font-semibold mt-6'>
                 Continue
               </button>
               <div className='flex items-center gap-4 w-[30px] mx-auto my-4'>
                 <div className='flex-1 h-px bg-gray-300'></div>
               </div>
 
-              <button className='w-full h-[50px] sm:h-[60px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
+              <button className='w-full max-h-[50px] sm:h-[60px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
               <Image src="/google.png" alt="Google Icon" width={20} height={20} />
             </button>
 
               <p className='text-[13px] text-gray-600 mt-6 text-center'>
-                Don't have an account? <a href="#" className='text-[#5075FF] hover:underline'>Sign up</a>
+                Already have an account? <Link href="/" className='text-[#5075FF] hover:underline'>Sign in</Link>
               </p>
             </div>
           </div>
@@ -136,4 +138,4 @@ const LoginUI = () => {
   )
 }
 
-export default LoginUI;
+export default SignupUI;
