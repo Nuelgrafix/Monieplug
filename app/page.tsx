@@ -85,7 +85,7 @@ const LoginUI = () => {
               alt='monieplug logo' 
               width={1000} 
               height={1000}
-              className='absolute bottom-[30px] sm:bottom-4 left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
+              className='absolute bottom-[10px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
             />
           </div>
 
