@@ -3,9 +3,15 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const LoginUI = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+
+  const handleContinue = () => {
+    router.push('/signup/info');
+  };
 
   return (
     <main className='bg-[#5075FF] lg:bg-white min-h-screen flex items-center justify-center p-2 sm:p-4'>
@@ -51,7 +57,10 @@ const LoginUI = () => {
                 </button>
               </div>
             </div>
-            <button className='w-full bg-[#1843E2] flex justify-center items-center gap-2 hover:bg-[#4060E8] transition-colors text-[18px] border-solid border-2 border-[#1843E2] h-[50px] sm:h-[60px] rounded-[8px] text-white py-2 text-sm font-semibold'>
+            <button 
+              onClick={handleContinue}
+              className='w-full bg-[#1843E2] flex justify-center items-center gap-2 hover:bg-[#4060E8] transition-colors text-[18px] border-solid border-2 border-[#1843E2] h-[50px] sm:h-[60px] rounded-[8px] text-white py-2 text-sm font-semibold'
+            >
               Continue
             </button>
             <div className='flex items-center gap-4 w-[30px] mx-auto sm:w-[40px] my-2'>
@@ -72,23 +81,22 @@ const LoginUI = () => {
         <div className='block lg:hidden w-[306px] h-[697px] bg-[#A9BCFF] rounded-[24px] p-4 mx-auto'>
           <div className='w-full h-full bg-white rounded-[24px] p-3 flex flex-col items-center gap-6'>
             {/* Profile Image Section */}
-            <div className='w-full max-w-[422px] h-[220px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
-            <Image 
-              src="/generated-image-1.png" 
-              alt="Login Image" 
-              width={422} 
-              height={540}
-              className='w-full sm:w-[422px] h-[220px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
-            />
-            <Image 
-              src="/logo.jpg" 
-              alt='monieplug logo' 
-              width={1000} 
-              height={1000}
-              className='absolute bottom-[10px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
-            />
-          </div>
-
+            <div className='w-full max-w-[422px] h-[320px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
+                        <Image 
+                          src="/generated-image-1.png" 
+                          alt="Login Image" 
+                          width={422} 
+                          height={540}
+                          className='w-full sm:w-[422px] h-[320px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
+                        />
+                        <Image 
+                          src="/logo.jpg" 
+                          alt='monieplug logo' 
+                          width={1000} 
+                          height={1000}
+                          className='absolute bottom-[10px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
+                        />
+                      </div>
 
             {/* Sign in form */}
             <div className='w-full px-2'>
@@ -115,7 +123,10 @@ const LoginUI = () => {
                 </div>
               </div>
 
-              <button className='w-full bg-[#1843E2] hover:bg-[#4060E8] transition-colors h-[48px] rounded-[8px] text-white text-[16px] font-semibold mt-6'>
+              <button 
+                onClick={handleContinue}
+                className='w-full bg-[#1843E2] hover:bg-[#4060E8] transition-colors h-[48px] rounded-[8px] text-white text-[16px] font-semibold mt-6'
+              >
                 Continue
               </button>
               <div className='flex items-center gap-4 w-[30px] mx-auto my-4'>

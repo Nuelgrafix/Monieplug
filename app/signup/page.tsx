@@ -109,39 +109,38 @@ const SignupUI: React.FC = () => {
       </div>
 
       {/* Mobile Layout */}
-      <div className='block lg:hidden w-[306px] h-[697px] bg-[#A9BCFF] rounded-[24px] p-4 mx-auto'>
-        <div className='w-full h-full bg-white rounded-[24px] p-3 flex flex-col items-center gap-6'>
+      <div className='block lg:hidden w-[350px] h-[697px] bg-[#A9BCFF] rounded-[24px] p-4 mx-auto'>
+        <div className='w-full h-full bg-white rounded-[24px] flex flex-col items-center gap-6'>
           {/* Profile Image Section */}
-          <div className='w-full max-w-[422px] h-[220px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
-            <Image 
-              src="/generated-image-1.png" 
-              alt="Signup Image" 
-              width={422} 
-              height={540}
-              className='w-full sm:w-[422px] h-[220px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
-            />
-            <Image 
-              src="/logo.jpg" 
-              alt='monieplug logo' 
-              width={1000} 
-              height={1000}
-              className='absolute bottom-[10px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
-            />
-          </div>
-
+          <div className='w-full max-w-[422px] p-3 h-[320px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
+                      <Image 
+                        src="/generated-image-1.png" 
+                        alt="Login Image" 
+                        width={422} 
+                        height={540}
+                        className='w-full sm:w-[422px] h-[320px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
+                      />
+                      <Image 
+                        src="/logo.jpg" 
+                        alt='monieplug logo' 
+                        width={1000} 
+                        height={1000}
+                        className='absolute bottom-[10px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
+                      />
+                    </div>
           {/* Sign in form */}
-          <div className='w-full px-2'>
-            <h2 className='text-[#333333] text-[20px] xs:text-[22px] sm:text-[24px] md:text-[28px] lg:text-[32px] font-bold mb-2'>
+          <div className='w-full'>
+            <h2 className='text-[#333333] text-[20px] font-bold mb-2 text-center'>
               Create a Monieplug account.
             </h2>
             
-            <div className='w-full space-y-4'>
+            <div className='w-full space-y-4 p-3'>
               <input 
                 type="email" 
                 placeholder="Continue with email"
                 value={email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                className='w-full max-h-[44px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                className='w-full h-[48px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
               />
               <div className='relative'>
                 <input 
@@ -149,7 +148,7 @@ const SignupUI: React.FC = () => {
                   placeholder="Password"
                   value={password}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                  className='w-full max-h-[44px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                  className='w-full h-[48px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
                 />
                 <button 
                   onClick={() => setShowPassword(!showPassword)}
@@ -164,7 +163,9 @@ const SignupUI: React.FC = () => {
             <button 
               onClick={handleContinue}
               disabled={isLoading}
-              className='w-full bg-[#1843E2] hover:bg-[#4060E8] transition-colors max-h-[48px] rounded-[8px] text-white text-[16px] font-semibold mt-6 disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full p-3 bg-[#1843E2] hover:bg-[#4060E8]
+               transition-colors h-[48px] rounded-[8px] text-white 
+               text-[16px] font-semibold mt-6 disabled:opacity-50 disabled:cursor-not-allowed'
             >
               {isLoading ? 'Loading...' : 'Continue'}
             </button>
