@@ -71,7 +71,7 @@ const SignupUI: React.FC = () => {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 className='w-full max-h-[48px] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
               />
-              <div className='relative'>
+              <div className='relative w-full'>
                 <input 
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
@@ -109,46 +109,46 @@ const SignupUI: React.FC = () => {
       </div>
 
       {/* Mobile Layout */}
-      <div className='block lg:hidden w-[350px] h-[697px] bg-[#A9BCFF] rounded-[24px] p-4 mx-auto'>
-        <div className='w-full h-full bg-white rounded-[24px] flex flex-col items-center gap-6'>
+      <div className='block sm:hidden w-full max-w-[338px] bg-[#A9BCFF] rounded-[24px] p-4 mx-auto'>
+        <div className='w-full p-2 bg-white rounded-[24px] flex flex-col items-center gap-3 min-h-[650px]'>
           {/* Profile Image Section */}
-          <div className='w-full max-w-[422px] p-3 h-[320px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
-                      <Image 
-                        src="/generated-image-1.png" 
-                        alt="Login Image" 
-                        width={422} 
-                        height={540}
-                        className='w-full sm:w-[422px] h-[320px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
-                      />
-                      <Image 
-                        src="/logo.jpg" 
-                        alt='monieplug logo' 
-                        width={1000} 
-                        height={1000}
-                        className='absolute bottom-[10px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
-                      />
-                    </div>
-          {/* Sign in form */}
-          <div className='w-full'>
-            <h2 className='text-[#333333] text-[20px] font-bold mb-2 text-center'>
+          <div className='w-full h-[280px] relative flex-shrink-0'>
+            <Image 
+              src="/generated-image-1.png" 
+              alt="Login Image" 
+              width={422} 
+              height={540}
+              className='w-full h-[280px] py-2 rounded-[24px] object-cover'
+            />
+            <Image 
+              src="/logo.jpg" 
+              alt='monieplug logo' 
+              width={1000} 
+              height={1000}
+              className='absolute bottom-[10px] left-0 h-[32px] w-[100px] rounded-tr-[10px]'
+            />
+          </div>
+          {/* Sign up form */}
+          <div className='w-full px-2 flex flex-col justify-center'>
+            <h2 className='text-[#333333] text-[20px] font-bold mb-4 text-center'>
               Create a Monieplug account.
             </h2>
             
-            <div className='w-full space-y-4 p-3'>
+            <div className='w-full flex flex-col items-center gap-3'>
               <input 
                 type="email" 
                 placeholder="Continue with email"
                 value={email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                className='w-full h-[48px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                className='w-full h-[48px] text-[#565655] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
               />
-              <div className='relative'>
+              <div className='relative w-full'>
                 <input 
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                  className='w-full h-[48px] px-3 py-2 text-[14px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                  className='w-full h-[48px] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
                 />
                 <button 
                   onClick={() => setShowPassword(!showPassword)}
@@ -158,26 +158,24 @@ const SignupUI: React.FC = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <button 
+                onClick={handleContinue}
+                disabled={isLoading}
+                className='w-full p-3 bg-[#1843E2] hover:bg-[#4060E8] transition-colors h-[48px] rounded-[8px] text-white text-[16px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                {isLoading ? 'Loading...' : 'Continue'}
+              </button>
             </div>
 
-            <button 
-              onClick={handleContinue}
-              disabled={isLoading}
-              className='w-full p-3 bg-[#1843E2] hover:bg-[#4060E8]
-               transition-colors h-[48px] rounded-[8px] text-white 
-               text-[16px] font-semibold mt-6 disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              {isLoading ? 'Loading...' : 'Continue'}
-            </button>
             <div className='flex items-center gap-4 w-[30px] mx-auto my-4'>
               <div className='flex-1 h-px bg-gray-300'></div>
             </div>
 
-            <button className='w-full max-h-[50px] sm:h-[60px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
+            <button className='w-full h-[48px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
               <Image src="/google.png" alt="Google Icon" width={20} height={20} />
             </button>
 
-            <p className='text-[13px] text-gray-600 mt-6 text-center'>
+            <p className='text-[13px] text-gray-600 mt-4 mb-4 text-center'>
               Already have an account? <Link href="/" className='text-[#5075FF] hover:underline'>Sign in</Link>
             </p>
           </div>

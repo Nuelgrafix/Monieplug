@@ -90,7 +90,7 @@ const EmailVerification = () => {
                     placeholder='0'
                     type="text"
                     maxLength={1}
-                    className='w-[36px] h-[36px] text-center text-[20px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5075FF] transition-all'
+                    className='w-[36px] h-[36px] lg:w-[48px] lg:h-[48px] text-[#BDBDBD] text-center text-[18px] lg:text-[24px] border border-[#4F4F4F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5075FF] transition-all'
                     />
                 ))}
                 </div>
