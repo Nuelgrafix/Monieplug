@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import { LuLogOut } from "react-icons/lu";
 
 const NavBar = () => {
   return (
@@ -31,8 +32,10 @@ const NavBar = () => {
             w-[140px] h-[35px] rounded-[8px] text-[16px] font-bold'>
             Profile</Link>
           </div>
-          <div>
-            <button>Logout</button>
+          <div className="w-[145px] h-[52px] rounded-[8px] text-[#282828] flex justify-center items-center py-[8px] px-[14px]
+            bg-[#7B97FF] cursor-pointer focus:text-[#1843E2] gap-2 focus:bg-[white] text-[16px] font-bold">
+            <LuLogOut className="w-[18px] h-[18px] text-[30px] font-bold" />
+            <span>Log Out</span>
           </div>
       </div>
            
