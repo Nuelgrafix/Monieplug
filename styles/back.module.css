@@ -1,0 +1,22 @@
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  padding: 7px 10px 7px 10px;
+  gap: 16px;
+  font-family: var(--font-Metropolis), sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 38px;
+  text-align: left;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+
+  color: #9ba9b7;
+}
+
+.back:hover {
+  color: #f58220;
+}

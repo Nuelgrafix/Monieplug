@@ -1,0 +1,22 @@
+.content {
+  background-color: rgb(var(--color-white));
+  border: 1px solid rgb(var(--color-site-ah));
+  border-radius: 0.8rem;
+  max-width: 240px;
+  width: 100%;
+  z-index: 888;
+  box-shadow: 0px 12px 16px -4px rgba(var(--color-site-b), 0.1);
+}
+
+.item {
+  padding: 10px 16px;
+  /* color: rgb(var(--color-site-c)); */
+}
+
+.item[href] {
+  display: block;
+}
+
+.item:not(:last-child) {
+  border-bottom: 1px solid #f2f4f7;
+}

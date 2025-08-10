@@ -1,0 +1,121 @@
+.emptyStateContainer{
+  width: 100%;
+  min-height: 60vh;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 auto;
+  gap: 1rem;
+
+
+
+}
+
+.skeletonContainer {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px 0 #1018280d;
+  padding: 2rem 2.5rem;
+  width: fit-content;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 auto;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.skeletonCircle {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  box-shadow: 0 0 0 2px #e9f0f5;
+}
+
+.skeletonBar1,
+.skeletonBar2,
+.skeletonBar3,
+.skeletonBar {
+  border-radius: 999px;
+  height: 0.8rem;
+  box-shadow: 0 0 0 2px #e9f0f5;
+}
+
+.skeletonBar1 {
+  padding: 4px 6rem;
+}
+.skeletonBar2 {
+  padding: 4px 6rem;
+}
+.skeletonBar3 {
+  padding: 4px 3rem;
+}
+
+
+
+.emptyStateContent{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyStateTitle{
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #002A48;
+}
+.emptyStateDescription{
+  font-size: 1rem;
+  font-weight: 400;
+  color: #5E98BA;
+}
+
+.actionButton{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background-color: #F58220;
+  color: #fff;
+  padding: 7px 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-top: 1rem;
+
+   & img {
+    width: 10px;
+    height: 10px;
+   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
