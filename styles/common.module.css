@@ -1,0 +1,36 @@
+.backAndHeading {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.backAndHeading > button {
+  margin-right: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backAndHeading > button > svg {
+  height: 2.4rem;
+  width: 2.4rem;
+  color: rgb(var(--color-site-b));
+}
+
+.heading {
+  margin-bottom: 0;
+}
+
+/* You need to manually include styles from layout.module.scss for .heading */
+.visuallyHidden {
+  position: absolute;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  word-wrap: normal;
+}

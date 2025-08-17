@@ -1,0 +1,111 @@
+/* Sidebar styles */
+
+.footer {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  padding: 10px 10px;
+  background-color: #ffffff;
+  border-top: 1px solid rgb(var(--color-site-p));
+  box-shadow: 0px 0.9rem 3rem 0px #0000000d;
+  position: absolute;
+  bottom: 0px;
+  z-index: 888;
+  width: 100%;
+}
+
+@media screen and (min-width: 934px) {
+  .footer {
+    display: none; /* or block if you don't want flex */
+  }
+}
+@media screen and (min-width: 500px) {
+  .activeNavLinkText{
+     font-size: 14px;
+  }
+}
+
+.logoContainer > img {
+  width: 117.3px;
+  height: auto;
+  object-fit: cover;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.activeNavLinkText {
+  color: #1843e2 !important;
+  font-family: var(--font-Metropolis), sans-serif;
+  font-weight: 700;
+  font-style: Bold;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  text-transform: capitalize;
+}
+
+.icon {
+  color: #1843e2 !important;
+  font-weight: 700;
+  font-style: Bold;
+}
+
+.NavLink {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  border-radius: 6px;
+  font-family: var(--font-Metropolis), sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  color: #282828;
+  text-transform: capitalize;
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+.NavLink:hover {
+  color: #1843e2 !important;
+  background-color: #f58220;
+}
+
+.activeNavLink {
+  color: #1843e2 !important;
+  background: #ffffff;
+}
+.activeNavLink:hover {
+  color: #ffffff !important;
+  background-color: #7b97ff;
+}
+
+/* for logout */
+.rootNavLink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  text-transform: capitalize;
+  /* background: #171717; */
+  border-radius: 6px;
+  transition: all 0.3s ease-in-out;
+}
+
+.rootNavLink:hover {
+  background-color: #f58220;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.rootNavLink.nohover:hover {
+  /* background: #171717; */
+  /* Prevent hover effect when no-hover class is added */
+  transform: none;
+  box-shadow: none;
+}

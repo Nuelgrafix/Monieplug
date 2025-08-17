@@ -1,0 +1,222 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(10px, 4vw, 30px);
+  padding: 15px clamp(10px, 3vw, 15px);
+  background-color: #ffffff;
+  border-bottom: 1px solid rgb(var(--color-site-p));
+  box-shadow: 0px 0.9rem 3rem 0px #0000000d;
+  position: sticky;
+  top: 0;
+  z-index: 888;
+  width: 100%;
+}
+
+/* .heading {
+  font-size: 22px;
+  color: #101828;
+} */
+
+.icons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(8px, 2vw, 10px);
+}
+
+.bellContainer {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: clamp(28px, 6vw, 32px);
+  height: clamp(28px, 6vw, 32px);
+}
+
+.bellContainer > img {
+  display: flex;
+  width: clamp(20px, 5vw, 25px);
+  height: auto;
+  color: #cdd4db;
+  object-fit: cover;
+}
+
+.countContainer {
+  position: absolute;
+  top: -2px;
+  right: 3px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: clamp(10px, 3vw, 12px);
+  height: clamp(10px, 3vw, 12px);
+  background-color: #ed3237;
+  color: #ffffff;
+  border-radius: 50%;
+}
+
+.countContainer > p {
+  font-family: var(--font-Metropolis), sans-serif;
+  font-size: clamp(5px, 1.5vw, 6px);
+}
+
+.avatar {
+  position: relative;
+  width: clamp(32px, 8vw, 40px);
+  height: clamp(32px, 8vw, 40px);
+  border-radius: 50%;
+}
+
+.avatar > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatarAndDetails {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.8rem, 3vw, 1.2rem);
+}
+
+/* Hide details text on small screens */
+@media (max-width: 640px) {
+  .avatarAndDetails .details {
+    display: none;
+  }
+}
+
+.details > p:first-child {
+  text-transform: capitalize;
+}
+
+.online {
+  width: clamp(0.8rem, 2.5vw, 1rem);
+  height: clamp(0.8rem, 2.5vw, 1rem);
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  background-color: #d0d5dd;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 40px;
+}
+
+.online.active {
+  background-color: #12b76a !important;
+}
+
+.profileContainer {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0px 8px 8px -4px #1018280a;
+  box-shadow: 0px -3px 39px 9px #1018281a;
+  width: clamp(200px, 50vw, 243px);
+  max-width: 90vw;
+}
+
+.listItem {
+  font-family: "Metropolis";
+  width: 100%;
+  padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px);
+  font-family: var(--font-Metropolis), sans-serif;
+  font-weight: 500;
+  font-size: clamp(12px, 3vw, 14px);
+  line-height: 20px;
+  color: #344054;
+}
+
+/* notification style */
+
+.overlay {
+  position: fixed;
+  top: 60px;
+  right: clamp(10px, 5vw, 90px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  box-shadow: 0px 8px 8px -4px;
+  box-shadow: 0px 9px 24px -4px;
+  z-index: 9999;
+  overflow: hidden;
+  transition: opacity 300ms ease-out;
+  max-width: 95vw;
+}
+
+/* Mobile adjustments for overlay */
+@media (max-width: 768px) {
+  .overlay {
+    top: 70px;
+    right: 10px;
+    left: 10px;
+    width: calc(100vw - 20px);
+  }
+}
+
+.notificationContainer {
+  display: flex;
+  gap: clamp(16px, 4vw, 24px);
+  flex-direction: column;
+  width: clamp(280px, 80vw, 450px);
+  padding: clamp(16px, 4vw, 24px);
+}
+
+.notificationavatarAndDetails {
+  font-family: var(--font-Metropolis), sans-serif;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: clamp(8px, 2vw, 12px);
+  padding-top: clamp(16px, 4vw, 20px);
+  padding-bottom: clamp(16px, 4vw, 20px);
+  border-bottom: 1px solid #ebebea;
+  border-top: 1px solid #ebebea;
+  width: 100%;
+}
+
+.notificationName {
+  font-family: var(--font-Metropolis), sans-serif;
+  font-size: clamp(12px, 3vw, 14px);
+  font-weight: 500;
+  line-height: 20px;
+  text-align: left;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+  color: #344054;
+}
+
+.onlineNoitfication {
+  width: clamp(0.8rem, 2.5vw, 1rem);
+  height: clamp(0.8rem, 2.5vw, 1rem);
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  background-color: #d0d5dd;
+  z-index: 40px;
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 480px) {
+  .header {
+    padding: 12px 10px;
+  }
+  
+  .icons {
+    gap: 6px;
+  }
+  
+  .profileContainer {
+    width: calc(100vw - 20px);
+    margin: 0 10px;
+  }
+  
+  .notificationContainer {
+    width: 100%;
+    padding: 16px;
+  }
+}

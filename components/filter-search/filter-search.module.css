@@ -1,0 +1,50 @@
+.form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  padding: 0 1.4rem;
+  cursor: pointer;
+  width: 100%;
+  height: 44px;
+  gap: 8px;
+  outline: transparent dashed 1.5px;
+  outline-offset: 3px;
+  transition: outline-color 0.2s;
+  overflow: hidden;
+}
+
+/* .form:focus-within {
+  outline-color: black;
+  
+} */
+
+.input:focus {
+  background: transparent !important;
+}
+
+.input {
+  background: transparent;
+  width: 100%;
+  border: none;
+  padding: 1.4rem 0;
+  outline: none;
+  appearance: none;
+  font-size: 12px;
+}
+
+.input::placeholder {
+  color: #667085;
+  font-family: var(--font-Metropolis), sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 24px;
+  text-align: left;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+}
+
+.input::-webkit-search-cancel-button {
+  display: none;
+}
