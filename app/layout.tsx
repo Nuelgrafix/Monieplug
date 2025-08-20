@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Metropolis } from "@/helpers/fonts";
-import ProgressBar from "@/components/progress-bar/progress-bar.component";
+// import ProgressBar from "@/components/progress-bar/progress-bar.component";
 import "./globals.css";
 import clsx from "clsx";
 
@@ -18,14 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={Metropolis.variable}>
-        <div
-          className={clsx(
-            "largeScreen flex flex-col justify-center items-center w-full h-auto overflow-hidden"
-          )}
-        >
-          <div className="w-full">
+        <div>
+          <div>
             {children}
-            <ProgressBar />
+            {/* <ProgressBar /> */}
           </div>
         </div>
       </body>

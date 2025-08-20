@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import Sidebar from "@/components/sidebar/sidebar.component";
 import Header from "@/components/header/header.component";
-
 // import { getSession } from "@/lib/auth";
 import routes from "@/helpers/routes";
 import Footer from "@/components/footer/footer_bar.component";
@@ -13,25 +12,39 @@ interface IDashboardLayoutProps {
 
 const DashboardLayout = async ({ children }: IDashboardLayoutProps) => {
   // const session = await getSession();
-
   // if (!session) {
   //   redirect(routes.login());
   // }
 
   return (
-    <>
-      <div className="flex bg-[#F8F8F8] w-full h-screen overflow-hidden">
+    <div className="w-full flex bg-[#F8F8F8] min-h-screen">
+      {/* Sidebar Section */}
+      <div className="w-[226px] flex-shrink-0">
         <Sidebar />
-
-        <aside className="w-full px-3 py-10">
-          <Header />
-          <div className="window-inner">
-            <div className="siteWapper h-screen w-full">{children}</div>
-          </div>
-          <Footer />
-        </aside>
       </div>
-    </>
+
+      {/* Main Content Section */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="px-3 py-4 lg:px-6 lg:py-6">
+          <Header />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 px-3 lg:px-6">
+          <div className="window-inner">
+            <div className="siteWapper min-h-full w-full">
+              {children}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-3 lg:px-6">
+          <Footer />
+        </div>
+      </div>
+    </div>
   );
 };
 

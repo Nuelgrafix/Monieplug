@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 
-/* dashboard layout */
+
 @media (min-width: 2400px) {
   .largeScreen {
     max-width: 1600px;
@@ -9,7 +9,6 @@
   }
 }
 
-/* fonts */
 h1 {
   font-weight: 900;
   font-family: var(--font-Metropolis), sans-serif;

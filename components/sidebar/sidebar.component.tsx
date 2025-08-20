@@ -23,7 +23,7 @@ const Sidebar: React.FC = () => {
   const pathname = usePathname();
 
   return (
-    <div className={clsx(styles.sidebar)}>
+    <div className={clsx(styles.sidebar, "fixed")}>
       <div className="px-[17px]">
         <div className="max-w-[117.3px] h-auto object-cover duration-300 ease-in-out">
           <Image

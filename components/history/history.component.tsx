@@ -19,7 +19,7 @@ const TransactionHistory: React.FC = () => {
 
   const formatAmount = (amount: number): string => {
     const sign = amount >= 0 ? '+' : '';
-    return `${sign}$${Math.abs(amount).toFixed(2)}`;
+    return `${sign}₦${Math.abs(amount).toFixed(2)}`;
   };
 
   const formatDate = (dateString: string): string => {
@@ -41,7 +41,7 @@ const TransactionHistory: React.FC = () => {
         <p className='text-xl lg:text-2xl text-[#282828] font-normal'>History</p>
         <ArrowRight className='text-[#101828] w-[24px] h-[24px]'/>
       </div>
-      <div className="w-full mt-2 flex flex-col items-center justify-evenly rounded-t-[20px] border border-b-0 border-[#6B7582] bg-white shadow-md">
+      <div className="w-full mt-2 flex flex-col items-center justify-evenly rounded-t-[20px] border border-b-0 border-[#E0E0E0] bg-white shadow-md">
         <div className='grid grid-cols-3 gap-4 px-6 py-4 border-b border-gray-100 w-full'>
           <div>Date</div>
           <div>Description</div>
