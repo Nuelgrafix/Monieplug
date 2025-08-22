@@ -37,7 +37,7 @@ const TransactionHistory: React.FC = () => {
 
   return (
     <div className='w-full flex flex-col gap-3 items-start max-w-[514px] mx-auto'>
-      <div className='w-full h-[40px] flex justify-between items-center px-3 bg-[#F9F9F9]'>
+      <div className='w-full h-[40px] flex justify-between items-center px-3 lg:bg-[#F9F9F9]'>
         <p className='text-xl lg:text-2xl text-[#282828] font-normal'>History</p>
         <ArrowRight className='text-[#101828] w-[24px] h-[24px]'/>
       </div>

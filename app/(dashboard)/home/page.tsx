@@ -35,15 +35,15 @@ const page = () => {
       )}
       
       <div className="w-full">
-        <div className='flex bg-white gap-6 lg:gap-12 xl:gap-20 w-full min-h-[291px] px-6 py-4 rounded-[16px]'>
+        <div className='flex flex-col lg:flex-row bg-white gap-6 lg:gap-12 xl:gap-20 w-full min-h-[291px] px-4 sm:px-6 py-4 rounded-[16px]'>
           <div className='flex flex-col items-start gap-3 flex-1 min-w-0'>
-            <h1 className='font-bold text-2xl lg:text-3xl xl:text-4xl'>
+            <h1 className='font-bold text-xl sm:text-2xl lg:text-3xl xl:text-4xl'>
             Welcome to Monieplug</h1>
             <div className='w-full max-w-lg xl:max-w-xl h-auto min-h-[128px] rounded-[12px] gap-8
-             p-6 bg-gradient-to-b from-[#1843E2] to-[#1185C8] mt-2'>
-              <div className='flex items-center justify-between'>
+             p-4 sm:p-6 bg-gradient-to-b from-[#1843E2] to-[#1185C8] mt-2'>
+              <div className='flex flex-row items-center justify-between gap-4 sm:gap-0'>
               <div className='flex items-start flex-col'>
-                  <span className='relative text-[20px] text-[#FFFFFF] font-normal'>
+                  <span className='relative text-[16px] sm:text-[20px] text-[#FFFFFF] font-normal'>
                   Current Balance
                   <button 
                   onClick={() => setShowPassword(!showPassword)}
@@ -53,30 +53,31 @@ const page = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
                   </span>
-                  <span className='text-[40px] text-[#FFFFFF] font-bold mt-2'>₦
-                    <span className='text-[45px]'>
+                  <span className='text-[30px] sm:text-[40px] text-[#FFFFFF] font-bold mt-2'>₦
+                    <span className='text-[35px] sm:text-[45px]'>
                       {showPassword ? '0.00' : '****'}
                     </span>
                   </span>
               </div>
-              <span className='text-[#E0E0E0] flex gap-[10px] items-center text-[24px]'>
-                {accountNumber} 
+              <span className='text-[#E0E0E0] flex gap-[10px] items-center text-[18px] sm:text-[24px]'>
+                <span className="hidden sm:inline">{accountNumber}</span>
+                <span className="sm:hidden">{accountNumber.slice(0, 6)}...</span>
                 <Copy 
                   className='cursor-pointer hover:text-white transition-colors' 
                   onClick={copyToClipboard}
-                  size={24}
+                  size={20}
                 />
               </span>
               </div>
             </div>
-            <div className="flex gap-2 items-center mt-3">
-              <button className="flex justify-center items-center gap-1 bg-[#FFFFFF] w-auto min-w-[137px] h-[43px]
-               border border-[#E0E0E0] px-4 py-3 rounded-[100px]">Add Money <Plus size={20} /></button>
-              <button className="flex justify-center items-center gap-1 bg-[#FFFFFF] w-auto min-w-[137px] h-[43px]
-               border border-[#E0E0E0] px-4 py-3 rounded-[100px]">Send Money <ArrowRight size={20} /></button>
+            <div className="flex flex-row gap-2 items-stretch sm:items-center mt-3 w-full sm:w-auto">
+              <button className="flex justify-center items-center gap-1 bg-[#FFFFFF] w-full sm:w-auto min-w-[137px] h-[43px]
+               border border-[#E0E0E0] px-4 py-3 rounded-[100px] bg-[#F9F9F9] lg:bg-transparent">Add Money <Plus size={20} /></button>
+              <button className="flex justify-center items-center gap-1 bg-[#FFFFFF] w-full sm:w-auto min-w-[137px] h-[43px]
+               border border-[#E0E0E0] px-4 py-3 rounded-[100px] bg-[#F9F9F9] lg:bg-transparent">Send Money <ArrowRight size={20} /></button>
             </div>
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full lg:w-auto">
             <div className="w-full">
               <TransactionHistory />
             </div>
@@ -85,7 +86,7 @@ const page = () => {
 
         
       </div>
-      <div className='min-h-screen mt-20'>
+      <div className='min-h-screen mt-12 sm:mt-20'>
         <Event />
       </div>
     </div>

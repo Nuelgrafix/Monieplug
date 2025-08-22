@@ -133,7 +133,7 @@ const LoginPage = () => {
                   <p className="text-red-500 text-sm mt-1">{formState.errors.email[0]}</p>
                 )}
               </div>
-              <div className='relative w-full'>
+              <div className='relative w-full flex items-center'>
                 <div
                   className={clsx(
                     formState?.errors?.password && formStyles.inputContainer,

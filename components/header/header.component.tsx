@@ -25,7 +25,7 @@ const Header = () => {
   const closeNotification = () => setIsOpenNotification(false);
 
   return (
-    <header className='flex justify-between items-center mb-8 w-full'>
+    <header className='flex justify-between items-center mb-8 w-full bg-white sm:bg-transparent'>
       {/* Welcome Message / Dashboard Title */}
       <div className="hidden sm:block">
         <h1 className='text-[32px] font-bold text-[#5075FF]'>Dashboard</h1>
@@ -43,25 +43,9 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Icons and Dropdowns */}
-      <div className='flex items-center gap-[8px] w-full sm:w-auto justify-end sm:justify-start'>
-        {/* Notification Bell */}
-        <div className="relative">
-          <button onClick={toggleNotification} className="relative inline-block">
-            <IoMdNotificationsOutline className='w-[32px] h-[32px] text-gray-700' />
-            <div className="absolute w-[14px] h-[14px] rounded-[355.29px] p-2 gap-[5.65px] top-[-3px] left-[14px] transform rotate-0 bg-orange-500 text-white text-[8px] font-normal flex items-center justify-center">
-              2
-            </div>
-          </button>
-
-          {/* Notification Dropdown */}
-          <NotificationComponent
-            isOpenNotification={isOpenNotification}
-            closeNotification={closeNotification}
-          />
-        </div>
-
-        {/* User Profile Dropdown */}
+      {/* Mobile Layout - User Info on Left, Notification on Right */}
+      <div className='flex items-center gap-[8px] w-full sm:w-auto justify-between sm:justify-start sm:flex-row-reverse'>
+        {/* User Profile Dropdown - appears first on mobile (left), last on desktop (right) */}
         <DropdownMenu
           trigger={
             <div className="flex items-center gap-[8px]">
@@ -143,6 +127,21 @@ const Header = () => {
             </div>
           </div>
         </DropdownMenu>
+        {/* Notification Bell - appears last on mobile (right), first on desktop (left) */}
+        <div className="relative">
+          <button onClick={toggleNotification} className="relative inline-block">
+            <IoMdNotificationsOutline className='w-[32px] h-[32px] text-gray-700' />
+            <div className="absolute w-[14px] h-[14px] rounded-[355.29px] p-2 gap-[5.65px] top-[-3px] left-[14px] transform rotate-0 bg-orange-500 text-white text-[8px] font-normal flex items-center justify-center">
+              2
+            </div>
+          </button>
+
+          {/* Notification Dropdown */}
+          <NotificationComponent
+            isOpenNotification={isOpenNotification}
+            closeNotification={closeNotification}
+          />
+        </div>
       </div>
     </header>
   );

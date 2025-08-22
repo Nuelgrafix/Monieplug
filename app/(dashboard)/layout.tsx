@@ -17,14 +17,14 @@ const DashboardLayout = async ({ children }: IDashboardLayoutProps) => {
   // }
 
   return (
-    <div className="w-full flex bg-[#F8F8F8] min-h-screen">
+    <div className="relative w-full flex bg-white md:bg-[#F8F8F8]">
       {/* Sidebar Section */}
-      <div className="w-[226px] flex-shrink-0">
+      <div className="hidden md:block md:w-[226px] flex-shrink-0">
         <Sidebar />
       </div>
 
       {/* Main Content Section */}
-      <div className="flex-1 flex flex-col">
+      <div className="w-full md:max-w-[1157px] flex-1 flex flex-col">
         {/* Header */}
         <div className="px-3 py-4 lg:px-6 lg:py-6">
           <Header />
@@ -33,7 +33,7 @@ const DashboardLayout = async ({ children }: IDashboardLayoutProps) => {
         {/* Main Content */}
         <div className="flex-1 px-3 lg:px-6">
           <div className="window-inner">
-            <div className="siteWapper min-h-full w-full">
+            <div className="siteWapper w-full">
               {children}
             </div>
           </div>
