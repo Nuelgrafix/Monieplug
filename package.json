@@ -24,7 +24,9 @@
     "react-loading-skeleton": "^3.5.0",
     "react-select": "^5.10.2",
     "react-toastify": "^11.0.5",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "lightningcss-linux-x64-gnu": "^1.21.0",
+    "lightningcss-linux-x64-musl": "^1.21.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
