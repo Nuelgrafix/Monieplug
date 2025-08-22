@@ -32,10 +32,9 @@ const DashboardLayout = async ({ children }: IDashboardLayoutProps) => {
 
         {/* Main Content */}
         <div className="flex-1 px-3 lg:px-6">
-          <div className="window-inner">
-            <div className="siteWapper w-full">
+          
+            <div className="w-full">
               {children}
-            </div>
           </div>
         </div>
 
