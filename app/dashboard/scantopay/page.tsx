@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import React from 'react'
+import QRLoadingScreen from '@/components/QRLoadingScreen'
+import QRDisplayPage from '@/components/QRDisplayPage'
 
 const page = () => {
   return (
@@ -28,6 +30,8 @@ export function SetupPaymentQR() {
   const [description, setDescription] = useState("");
   const [qrLabel, setQrLabel] = useState("");
   const [variations, setVariations] = useState<Variation[]>([{ id: Date.now(), name: "" }]);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const addVariation = () =>
     setVariations((v) => [...v, { id: Date.now(), name: "" }]);
@@ -42,6 +46,7 @@ export function SetupPaymentQR() {
 
   const handleGenerate = () => {
     if (!canGenerate) return;
+    setShowLoadingModal(true);
     // hook up to your QR generation API
     console.log({ businessName, businessAddress, description, qrLabel, variations });
   };
@@ -166,6 +171,34 @@ export function SetupPaymentQR() {
           Generate payment QR code
         </button>
       </div>
+
+      {/* Loading Modal */}
+      {showLoadingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-end pr-8">
+          <div className="bg-black/50 backdrop-blur-sm absolute inset-0" onClick={() => setShowLoadingModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-96 h-[500px] overflow-hidden">
+            <QRLoadingScreen
+              onComplete={() => {
+                setShowLoadingModal(false);
+                setShowQRModal(true);
+              }}
+              duration={3000}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* QR Display Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-end pr-8">
+          <div className="bg-black/50 backdrop-blur-sm absolute inset-0" onClick={() => setShowQRModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-96 h-[600px] overflow-hidden">
+            <QRDisplayPage
+              onEdit={() => setShowQRModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
