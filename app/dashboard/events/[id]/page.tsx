@@ -5,6 +5,8 @@ import { ArrowLeft, Calendar, Share2 } from "lucide-react";
 import React, { useState } from 'react'
 import { popularEvents, upcomingEvents } from '@/data/events'
 import { PurchaseTicketFlow } from '@/components/PurchaseTicketFlow'
+import CreateEventModal from '@/components/CreateEventModal'
+import CreateEventTickets from '@/components/CreateEventTickets'
 
 const page = () => {
   return (
@@ -18,6 +20,7 @@ export function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = parseInt(params.id as string);
+  const [purchaseStep, setPurchaseStep] = useState<'none' | 'describe' | 'tickets'>('none');
   const [isPurchasing, setIsPurchasing] = useState(false);
 
   const allEvents = [...popularEvents, ...upcomingEvents];
@@ -33,6 +36,28 @@ export function EventDetailPage() {
     } else {
       await navigator.clipboard.writeText(window.location.href);
     }
+  };
+
+  const handleNext = (data: { description: string; image: File | null }) => {
+    // Handle the next step in purchase flow
+    console.log('Next step with data:', data);
+    setPurchaseStep('tickets');
+  };
+
+  const handleBack = () => {
+    setPurchaseStep('describe');
+  };
+
+  const handleClose = () => {
+    setPurchaseStep('none');
+  };
+
+  const handlePublish = (data: { main: any; variations: any[] }) => {
+    // Handle the publish logic here
+    console.log('Publishing with data:', data);
+    // Navigate to purchase ticket flow
+    setIsPurchasing(true);
+    setPurchaseStep('none');
   };
 
   if (isPurchasing) {
@@ -74,7 +99,7 @@ export function EventDetailPage() {
             {/* Actions */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsPurchasing(true)}
+                onClick={() => setPurchaseStep('describe')}
                 className="flex-1 bg-[#1E35C8] hover:bg-[#1a2eb0] active:scale-[0.98] text-white text-sm font-semibold py-3 rounded-xl transition-all shadow-sm"
               >
                 Purchase ticket
@@ -116,6 +141,22 @@ export function EventDetailPage() {
             })}
           </div>
         </div>
+
+        {/* Purchase Ticket Modals */}
+        {purchaseStep === 'describe' && (
+          <CreateEventModal
+            onClose={handleClose}
+            onNext={handleNext}
+          />
+        )}
+
+        {purchaseStep === 'tickets' && (
+          <CreateEventTickets
+            onBack={handleBack}
+            onClose={handleClose}
+            onPublish={handlePublish}
+          />
+        )}
       </div>
     </div>
   );
