@@ -88,7 +88,7 @@ const historyItems = [
   { date: "2024-03-13", description: "Freelance Payment", amount: "+$320", positive: true },
 ];
 
-export function HomePage() {
+function HomePage() {
   const router = useRouter();
 
   return (
