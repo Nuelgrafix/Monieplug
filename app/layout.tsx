@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat } from 'next/font/google';
 import "./globals.css";
 import ReduxProvider from '../redux/Provider';
+import { Toaster } from 'react-hot-toast';
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -25,6 +26,7 @@ export default function RootLayout({
         style={montserrat.style}
       >
         <ReduxProvider>{children}</ReduxProvider>
+        <Toaster />
       </body>
     </html>
   );

@@ -20,7 +20,7 @@ export default function LandingHeader() {
         <nav className="hidden md:flex items-left gap-8">
           {[
             { label: "Events", href: "/events" },
-            { label: "Scan2Pay", href: "/scan2pay" },
+            { label: "Scan2Pay", href: "/scantopay" },
             { label: "About Us", href: "/about" },
           ].map(({ label, href }) => (
             <Link

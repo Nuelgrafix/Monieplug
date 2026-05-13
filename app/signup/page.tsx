@@ -6,7 +6,35 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/redux/store";
 import { signupStart, signupSuccess, signupFailure, clearError } from "@/redux/slices/authSlice";
-import { useSignupMutation } from "@/redux/slices/apiSlice";
+import { useSignupMutation, useSendOtpMutation, useVerifyEmailMutation } from "@/redux/slices/apiSlice";
+import toast from 'react-hot-toast';
+import * as yup from 'yup';
+
+// Validation schemas
+const step1Schema = yup.object().shape({
+  first_name: yup.string().required('First name is required'),
+  last_name: yup.string().required('Last name is required'),
+  email: yup.string().email('Invalid email address').required('Email is required'),
+  phone: yup.string().required('Phone number is required'),
+});
+
+const step2Schema = yup.object().shape({
+  date_of_birth: yup.string().required('Date of birth is required'),
+  gender: yup.string().oneOf(['0', '1'], 'Please select a valid gender').required('Gender is required'),
+  address: yup.string().required('Address is required'),
+  city: yup.string().required('City is required'),
+  state: yup.string().required('State is required'),
+  country: yup.string().required('Country is required'),
+  // Optional fields can be added here if needed
+});
+
+const passwordSchema = yup.object().shape({
+  password: yup.string().min(8, 'Password must be at least 8 characters long').required('Password is required'),
+});
+
+const confirmPasswordSchema = yup.object().shape({
+  confirmPassword: yup.string().oneOf([yup.ref('password')], 'Passwords do not match').required('Please confirm your password'),
+});
 
 // ── Swap these in /public ──
 const LOGO_SRC        = "/logo.jpg";
@@ -168,6 +196,22 @@ function Step1({ next, signupData, setSignupData }: {
         </div>
 
         <input
+          type="text"
+          placeholder="First Name"
+          value={signupData.first_name}
+          onChange={(e) => setSignupData({ ...signupData, first_name: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="Last Name"
+          value={signupData.last_name}
+          onChange={(e) => setSignupData({ ...signupData, last_name: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
           type="email"
           placeholder="Email"
           value={signupData.email}
@@ -215,10 +259,13 @@ function Step1({ next, signupData, setSignupData }: {
 }
 
 /* ═══════════════════════════════════════
-   STEP 2 — Personal details
-═══════════════════════════════════════ */
-function Step2({ next }: { next: () => void }) {
-  const fields = ["First name", "Middle name", "Surname", "Date of Birth (YY/MM/DD)", "Address 1"];
+    STEP 2 — Personal details
+ ═══════════════════════════════════════ */
+ function Step2({ next, signupData, setSignupData }: {
+  next: () => void;
+  signupData: any;
+  setSignupData: (data: any) => void;
+ }) {
   return (
     <div className="bg-white rounded-2xl shadow-xl flex overflow-hidden w-full max-w-[820px] p-4">
       <div className="hidden sm:block w-[200px] flex-shrink-0">
@@ -228,17 +275,107 @@ function Step2({ next }: { next: () => void }) {
       <div className="flex-1 p-7 flex flex-col gap-3">
         <div>
           <p className="text-gray-500 text-sm">Kindly fill the form to</p>
-          <h2 className="text-2xl font-bold text-gray-900">Create Account</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Complete Your Details</h2>
           <div className="mt-1 w-10 h-0.5 bg-gray-900" />
         </div>
 
-        {fields.map((f) => (
-          <input
-            key={f}
-            placeholder={f}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        ))}
+        <input
+          type="date"
+          placeholder="Date of Birth"
+          value={signupData.date_of_birth}
+          onChange={(e) => setSignupData({ ...signupData, date_of_birth: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <select
+          value={signupData.gender}
+          onChange={(e) => setSignupData({ ...signupData, gender: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select Gender</option>
+          <option value="0">Male</option>
+          <option value="1">Female</option>
+        </select>
+
+        <input
+          type="text"
+          placeholder="Address"
+          value={signupData.address}
+          onChange={(e) => setSignupData({ ...signupData, address: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="City"
+          value={signupData.city}
+          onChange={(e) => setSignupData({ ...signupData, city: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="State"
+          value={signupData.state}
+          onChange={(e) => setSignupData({ ...signupData, state: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="Country"
+          value={signupData.country}
+          onChange={(e) => setSignupData({ ...signupData, country: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="NIN User ID"
+          value={signupData.nin_user_id}
+          onChange={(e) => setSignupData({ ...signupData, nin_user_id: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="BVN"
+          value={signupData.bvn}
+          onChange={(e) => setSignupData({ ...signupData, bvn: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="Next of Kin Name"
+          value={signupData.next_of_kin_name}
+          onChange={(e) => setSignupData({ ...signupData, next_of_kin_name: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="tel"
+          placeholder="Next of Kin Phone"
+          value={signupData.next_of_kin_phone}
+          onChange={(e) => setSignupData({ ...signupData, next_of_kin_phone: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="Referral Name"
+          value={signupData.referral_name}
+          onChange={(e) => setSignupData({ ...signupData, referral_name: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="tel"
+          placeholder="Referral Phone"
+          value={signupData.referral_phone}
+          onChange={(e) => setSignupData({ ...signupData, referral_phone: e.target.value })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
 
         <Btn label="Next" onClick={next} />
       </div>
@@ -247,11 +384,13 @@ function Step2({ next }: { next: () => void }) {
 }
 
 /* ═══════════════════════════════════════
-   STEP 3 — Verify email OTP
-═══════════════════════════════════════ */
-function Step3({ next }: { next: () => void }) {
-  const [otp, setOtp] = useState(Array(6).fill(""));
-
+    STEP 3 — Verify email OTP
+ ═══════════════════════════════════════ */
+ function Step3({ next, signupData, setSignupData }: {
+  next: () => void;
+  signupData: any;
+  setSignupData: (data: any) => void;
+ }) {
   return (
     <div className="bg-white rounded-2xl shadow-xl flex items-center h-[380px] overflow-hidden w-full max-w-[820px] p-4">
       <div className="hidden sm:block w-[200px] flex-shrink-0">
@@ -266,7 +405,7 @@ function Step3({ next }: { next: () => void }) {
           </p>
         </div>
 
-        <PinInput value={otp} onChange={setOtp} show={true} />
+        <PinInput value={signupData.otp} onChange={(otp) => setSignupData({ ...signupData, otp })} show={true} />
 
         <Btn label="Verify email" onClick={next} />
       </div>
@@ -275,10 +414,13 @@ function Step3({ next }: { next: () => void }) {
 }
 
 /* ═══════════════════════════════════════
-   STEP 4 — Create login password (PIN)
-═══════════════════════════════════════ */
-function Step4({ next }: { next: () => void }) {
-  const [pin, setPin]   = useState(Array(6).fill(""));
+    STEP 4 — Create login password
+ ═══════════════════════════════════════ */
+ function Step4({ next, signupData, setSignupData }: {
+  next: () => void;
+  signupData: any;
+  setSignupData: (data: any) => void;
+ }) {
   const [show, setShow] = useState(false);
 
   return (
@@ -295,26 +437,37 @@ function Step4({ next }: { next: () => void }) {
           </h2>
         </div>
 
-        <PinInput value={pin} onChange={setPin} show={show} />
+        <div className="relative">
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Enter password"
+            value={signupData.password}
+            onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
+          >
+            {show ? "Hide" : "Show"}
+          </button>
+        </div>
 
-        <button
-          onClick={() => setShow((s) => !s)}
-          className="text-xs text-gray-500 hover:text-gray-800 self-end -mt-2 transition-colors"
-        >
-          {show ? "Hide password" : "Show password"}
-        </button>
-
-        <Btn label="Continue to create password" onClick={next} />
+        <Btn label="Continue" onClick={next} />
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════
-   STEP 5 — Confirm password
-═══════════════════════════════════════ */
-function Step5({ next }: { next: () => void }) {
-  const [pin, setPin]   = useState(Array(6).fill(""));
+    STEP 5 — Confirm password
+ ═══════════════════════════════════════ */
+ function Step5({ next, signupData, setSignupData }: {
+  next: () => void;
+  signupData: any;
+  setSignupData: (data: any) => void;
+ }) {
   const [show, setShow] = useState(false);
 
   return (
@@ -331,14 +484,22 @@ function Step5({ next }: { next: () => void }) {
           </h2>
         </div>
 
-        <PinInput value={pin} onChange={setPin} show={show} />
-
-        <button
-          onClick={() => setShow((s) => !s)}
-          className="text-xs text-gray-500 hover:text-gray-800 self-end -mt-2 transition-colors"
-        >
-          {show ? "Hide password" : "Show password"}
-        </button>
+        <div className="relative">
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Confirm password"
+            value={signupData.confirmPassword || ''}
+            onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
+          >
+            {show ? "Hide" : "Show"}
+          </button>
+        </div>
 
         <Btn label="Create password" onClick={next} />
       </div>
@@ -401,42 +562,81 @@ function Step6({ onSignup, loading, error }: {
 export default function SignupPage() {
   const [step, setStep] = useState<Step>(1);
   const [signupData, setSignupData] = useState({
-    email: '',
+    first_name: '',
+    last_name: '',
     phone: '',
+    email: '',
     password: '',
     confirmPassword: '',
-    pin: ['', '', '', '', '', ''],
-    firstName: '',
-    lastName: '',
+    otp: Array(6).fill(''),
+    date_of_birth: '',
+    gender: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    nin_user_id: '',
+    bvn: '',
+    next_of_kin_name: '',
+    next_of_kin_phone: '',
+    referral_name: '',
+    referral_phone: '',
   });
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.auth);
   const [signup, { isLoading: apiLoading }] = useSignupMutation();
+  const [sendOtp] = useSendOtpMutation();
+  const [verifyEmail] = useVerifyEmailMutation();
 
-  const advance = () => setStep((s) => Math.min(s + 1, 6) as Step);
+  const handleNext = async (currentStep: Step) => {
+    try {
+      if (currentStep === 1) {
+        await step1Schema.validate(signupData);
+        // Send OTP after validation
+        await sendOtp(signupData.email).unwrap();
+        toast.success('OTP sent to your email');
+      } else if (currentStep === 2) {
+        await step2Schema.validate(signupData);
+      } else if (currentStep === 3) {
+        // Verify OTP
+        const otpCode = signupData.otp?.join('') || '';
+        if (!otpCode || otpCode.length !== 6) {
+          throw new Error('Please enter a valid 6-digit OTP');
+        }
+        await verifyEmail({ code: otpCode }).unwrap();
+        toast.success('Email verified successfully');
+      } else if (currentStep === 4) {
+        await passwordSchema.validate(signupData);
+      } else if (currentStep === 5) {
+        await confirmPasswordSchema.validate(signupData);
+      }
+      setStep((s) => Math.min(s + 1, 6) as Step);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
 
   const handleSignup = async () => {
-    if (!signupData.email || !signupData.password || !signupData.phone) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    if (signupData.password !== signupData.confirmPassword) {
-      alert('Passwords do not match');
+    // Final validation as fallback
+    try {
+      const fullSchema = yup.object().shape({
+        ...step1Schema.fields,
+        ...step2Schema.fields,
+        ...passwordSchema.fields,
+        confirmPassword: confirmPasswordSchema.fields.confirmPassword,
+      });
+      await fullSchema.validate(signupData);
+    } catch (error: any) {
+      toast.error(error.message);
       return;
     }
 
     dispatch(signupStart());
 
     try {
-      const result = await signup({
-        email: signupData.email,
-        password: signupData.password,
-        phone: signupData.phone,
-        firstName: signupData.firstName,
-        lastName: signupData.lastName,
-      }).unwrap();
+      const { confirmPassword, otp, ...payload } = signupData;
+      const result = await signup(payload).unwrap();
 
       dispatch(signupSuccess({
         user: result.user,
@@ -453,11 +653,11 @@ export default function SignupPage() {
     <PageShell>
       <div className="backdrop-blur-sm bg-white/30 p-6 rounded-lg w-[800px]">
 
-      {step === 1 && <Step1 next={advance} signupData={signupData} setSignupData={setSignupData} />}
-      {step === 2 && <Step2 next={advance} />}
-      {step === 3 && <Step3 next={advance} />}
-      {step === 4 && <Step4 next={advance} />}
-      {step === 5 && <Step5 next={advance} />}
+      {step === 1 && <Step1 next={() => handleNext(1)} signupData={signupData} setSignupData={setSignupData} />}
+      {step === 2 && <Step2 next={() => handleNext(2)} signupData={signupData} setSignupData={setSignupData} />}
+      {step === 3 && <Step3 next={() => handleNext(3)} signupData={signupData} setSignupData={setSignupData} />}
+      {step === 4 && <Step4 next={() => handleNext(4)} signupData={signupData} setSignupData={setSignupData} />}
+      {step === 5 && <Step5 next={() => handleNext(5)} signupData={signupData} setSignupData={setSignupData} />}
       {step === 6 && <Step6 onSignup={handleSignup} loading={loading || apiLoading} error={error} />}
       </div>
 

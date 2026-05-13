@@ -41,11 +41,7 @@ const LandingPage = () => {
       <section className="">
         <GetSupportSection/>
       </section>
-<hr className='text-[#A9BCFF]'/>
-      {/* Footer */}
-      <footer className="">
-       <FooterCTA/>
-      </footer>
+
     </div>
   );
 };

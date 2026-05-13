@@ -3,7 +3,10 @@ const LOGO_SRC = "/logo.jpg";
 
 export default function FooterCTA() {
   return (
-    <footer className="w-full bg-gradient-to-b from-white to-gray-100">
+
+    <div>
+      <hr className="text-[#A9BCFF]"/>
+      <footer className="w-full bg-gradient-to-b from-white to-gray-100">
 
       {/* ── CTA block ── */}
       <div className="flex flex-col items-center text-center px-6 pt-16 pb-12 gap-5">
@@ -47,5 +50,6 @@ export default function FooterCTA() {
         </nav>
       </div>
     </footer>
+    </div>
   );
 }

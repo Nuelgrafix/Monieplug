@@ -1,215 +1,198 @@
-"use client"
-import React, { useState, useEffect, Suspense } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '@/redux/store';
-import { loginStart, loginSuccess, loginFailure, clearError } from '@/redux/slices/authSlice';
-import { useLoginMutation } from '@/redux/slices/apiSlice';
+"use client";
 
-const LoginUI: React.FC = () => {
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
-  const [login, { isLoading: apiLoading }] = useLoginMutation();
+import { useRef, useState, KeyboardEvent, ChangeEvent } from "react";
+import Link from "next/link";
 
-  // Get redirect URL from query params
-  const redirect = searchParams.get('redirect') || '/dashboard';
+// ── Swap these paths ──
+const BG_IMAGE   = "/subg.png";   // blurred background photo
+const SIDE_IMAGE = "/su1.png";  // man on phone (left panel)
+const LOGO_SRC   = "/logo.jpg";        // Monieplug logo
 
-  const handleContinue = async () => {
-    if (!email || !password) {
-      alert('Please fill in all fields');
-      return;
-    }
+const COUNTRIES = [
+  { code: "NG", dial: "+234" },
+  { code: "US", dial: "+1" },
+  { code: "GB", dial: "+44" },
+  { code: "GH", dial: "+233" },
+  { code: "KE", dial: "+254" },
+];
 
-    dispatch(loginStart());
+export default function SignInPage() {
+  const [country, setCountry]   = useState(COUNTRIES[0]);
+  const [pin, setPin]           = useState(["", "", "", "", "", ""]);
+  const [showPin, setShowPin]   = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const refs = Array.from({ length: 6 }, () => useRef<HTMLInputElement>(null));
 
-    try {
-      const result = await login({ email, password }).unwrap();
+  const handlePinChange = (i: number, e: ChangeEvent<HTMLInputElement>) => {
+    const ch = e.target.value.replace(/\D/, "").slice(-1);
+    const next = [...pin];
+    next[i] = ch;
+    setPin(next);
+    if (ch && i < 5) refs[i + 1].current?.focus();
+  };
 
-      // Dispatch login success with user data and token
-      dispatch(loginSuccess({
-        user: result.user,
-        token: result.token
-      }));
-
-      // Redirect to the intended page or dashboard
-      router.push(redirect);
-
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      dispatch(loginFailure(error?.data?.message || 'Login failed. Please try again.'));
+  const handlePinKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !pin[i] && i > 0) {
+      refs[i - 1].current?.focus();
     }
   };
 
-  // Clear error when component unmounts or email/password changes
-  useEffect(() => {
-    if (error) {
-      dispatch(clearError());
-    }
-  }, [email, password, dispatch]);
+  const isReady = pin.every((d) => d !== "");
+
+  const handleSubmit = () => {
+    if (!isReady) return;
+    setLoading(true);
+    setTimeout(() => setLoading(false), 1500); // simulate API call
+  };
 
   return (
-    <main className='bg-[#5075FF] lg:bg-white min-h-screen flex items-center justify-center p-2 sm:p-4'>
-      {/* Desktop Layout */}
-      <div className='hidden sm:block w-full max-w-[950px] min-h-[500px] bg-[#5075FF] rounded-[24px] sm:rounded-[32px] border-2 border-[#F9F9F933] p-2 sm:p-6'>
-        <div className='bg-white min-h-[440px] flex flex-col lg:flex-row gap-8 sm:gap-[63px] justify-center items-center w-full rounded-[16px] sm:rounded-[24px] overflow-hidden'>
-          {/* Profile Image Section */}
-          <div className='w-full max-w-[422px] h-[220px] sm:h-[540px] relative ml-0 lg:ml-[20px] flex-shrink-0'>
-            <Image
-              src="/generated-image-1.png"
-              alt="Login Image"
-              width={422}
-              height={540}
-              className='w-full sm:w-[422px] h-[220px] sm:h-[540px] py-2 sm:py-5 rounded-[24px] sm:rounded-[40px] object-cover'
-            />
-            <Image
-              src="/logo.jpg"
-              alt='monieplug logo'
-              width={1000}
-              height={1000}
-              className='absolute bottom-[10px] lg:bottom-[20px] left-0 h-[32px] sm:h-[43px] w-[100px] sm:w-[142.7px] rounded-tr-[10px] sm:rounded-tr-[16px]'
-            />
-          </div>
-          <div className='w-full max-w-[422px] sm:p-5 h-auto sm:h-[457px] mx-auto flex flex-col justify-center items-center gap-4 sm:px-8'>
-            <h2 className='text-[#333333] text-[18px] sm:text-[24px] md:text-[28px] lg:text-[30px] font-bold mb-2'>Sign in to your account</h2>
-            <div className='w-full space-y-3'>
-              <input
-                type="email"
-                placeholder="Continue with email"
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                className='w-full max-h-[48px] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+    <div
+      className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url('${BG_IMAGE}')` }}
+    >
+      {/* Dark blurred overlay */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 backdrop-blur-sm bg-black/55">
+
+        {/* ── Outer rounded frame (the dark card visible in screenshot) ── */}
+        <div className="w-full max-w-[740px] bg-white/10 backdrop-blur-md rounded-[22px] p-4 shadow-2xl">
+
+          {/* ── Inner white card ── */}
+          <div className="bg-white rounded-2xl overflow-hidden flex">
+
+            {/* Left: image panel */}
+            <div className="relative hidden sm:flex flex-col justify-end w-[260px] flex-shrink-0 min-h-[370px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={SIDE_IMAGE}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover object-top"
               />
-              <div className='relative w-full'>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                  className='w-full max-h-[48px] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
-                />
-                <button
-                  onClick={() => setShowPassword(!showPassword)}
-                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500'
-                  type="button"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              {error && (
-                <div className='w-full p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm'>
-                  {error}
+            </div>
+
+            {/* Right: form panel */}
+            <div className="flex-1 flex flex-col justify-center px-8 py-10">
+              {/* Heading */}
+              <p className="text-gray-500 text-sm mb-0.5 tracking-wide">
+                Welcome &nbsp;back to Monieplug
+              </p>
+              <h1 className="text-[2rem] font-bold text-gray-900 leading-tight mb-6">
+                Sign in
+              </h1>
+
+              {/* Phone / country selector */}
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden mb-4 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                <div className="relative flex items-center">
+                  <select
+                    value={country.code}
+                    onChange={(e) =>
+                      setCountry(
+                        COUNTRIES.find((c) => c.code === e.target.value) ||
+                          COUNTRIES[0]
+                      )
+                    }
+                    className="appearance-none bg-transparent pl-3 pr-6 py-3 text-sm text-gray-700 focus:outline-none cursor-pointer"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.code} {c.dial}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Chevron */}
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="absolute right-1 w-3 h-3 text-gray-400 pointer-events-none fill-none stroke-current"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6l4 4 4-4" />
+                  </svg>
                 </div>
-              )}
-            </div>
-            <button
-              onClick={handleContinue}
-              disabled={loading || apiLoading}
-              className='w-full bg-[#1843E2] flex justify-center items-center gap-2 hover:bg-[#4060E8] transition-colors text-[18px] border-solid border-2 border-[#1843E2] max-h-[60px] rounded-[8px] text-white py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              {(loading || apiLoading) ? 'Signing in...' : 'Continue'}
-            </button>
-            <div className='flex items-center gap-4 w-[30px] mx-auto sm:w-[40px] my-2'>
-              <div className='flex-1 h-px bg-gray-300'></div>
-            </div>
-            <button className='w-full max-h-[60px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
-              <Image src="/google.png" alt="Google Icon" width={20} height={20} />
-            </button>
-            <p className='text-[13px] sm:text-[14px] text-gray-600 mt-2 text-center'>
-              Don't have an account? <Link href="/signup" className='text-[#5075FF] hover:underline'>Sign up</Link>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Layout */}
-      <div className='block sm:hidden w-full max-w-[338px] bg-[#A9BCFF] rounded-[24px] p-4 mx-auto'>
-        <div className='w-full p-2 bg-white rounded-[24px] flex flex-col items-center gap-3 min-h-[650px]'>
-          {/* Profile Image Section */}
-          <div className='w-full h-[280px] relative flex-shrink-0'>
-            <Image
-              src="/generated-image-1.png"
-              alt="Login Image"
-              width={422}
-              height={540}
-              className='w-full h-[280px] py-2 rounded-[24px] object-cover'
-            />
-            <Image
-              src="/logo.jpg"
-              alt='monieplug logo'
-              width={1000}
-              height={1000}
-              className='absolute bottom-[10px] left-0 h-[32px] w-[100px] rounded-tr-[10px]'
-            />
-          </div>
-          {/* Sign in form */}
-          <div className='w-full px-2 flex flex-col justify-center'>
-            <h2 className='text-[#333333] text-[20px] font-bold mb-4 text-center'>
-              Sign in to your account
-            </h2>
-
-            <div className='w-full flex flex-col items-center gap-3'>
-              <input
-                type="email"
-                placeholder="Continue with email"
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                className='w-full h-[48px] text-[#565655] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
-              />
-              <div className='relative w-full'>
+                {/* Divider */}
+                <div className="w-px h-5 bg-gray-200" />
                 <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                  className='w-full h-[48px] px-3 py-2 text-[16px] rounded-lg border border-[#565655] focus:outline-none focus:ring-2 focus:ring-[#5075FF] focus:border-transparent'
+                  type="tel"
+                  placeholder="Phone number"
+                  className="flex-1 px-3 py-3 text-sm focus:outline-none text-gray-700 placeholder-gray-400"
                 />
+              </div>
+
+              {/* PIN boxes */}
+              <div className="flex gap-2 mb-1">
+                {pin.map((val, i) => (
+                  <input
+                    key={i}
+                    ref={refs[i]}
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={val}
+                    onChange={(e) => handlePinChange(i, e)}
+                    onKeyDown={(e) => handlePinKey(i, e)}
+                    className="w-full aspect-square max-w-[52px] text-center text-base font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  />
+                ))}
+              </div>
+
+              {/* Forgot / Hide row */}
+              <div className="flex justify-between items-center mb-5">
+                <button className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                  Forget password?
+                </button>
                 <button
-                  onClick={() => setShowPassword(!showPassword)}
-                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500'
-                  type="button"
+                  onClick={() => setShowPin((s) => !s)}
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPin ? "Hide password" : "Hide password"}
                 </button>
               </div>
+
+              {/* Sign in button */}
               <button
-                onClick={handleContinue}
-                disabled={loading || apiLoading}
-                className='w-full p-3 bg-[#1843E2] hover:bg-[#4060E8] transition-colors h-[48px] rounded-[8px] text-white text-[16px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
+                onClick={handleSubmit}
+                disabled={!isReady || loading}
+                className={`w-full py-3 rounded-lg text-white text-sm font-semibold transition-all duration-200
+                  ${isReady && !loading
+                    ? "bg-[#2338e0] hover:bg-[#1a2bbf] active:scale-[0.98]"
+                    : "bg-[#2338e0]/40 cursor-not-allowed"
+                  }`}
               >
-                {(loading || apiLoading) ? 'Signing in...' : 'Continue'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" />
+                      <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    Signing in…
+                  </span>
+                ) : (
+                  "Sign in"
+                )}
               </button>
+
+              {/* Sign up prompt */}
+              <p className="text-center text-xs text-gray-500 mt-4">
+                New to Monieplug?{" "}
+                <Link
+                  href="/signup"
+                  className="text-[#2338e0] font-semibold hover:underline"
+                >
+                  Sign Up
+                </Link>
+              </p>
             </div>
-
-            <div className='flex items-center gap-4 w-[30px] mx-auto my-4'>
-              <div className='flex-1 h-px bg-gray-300'></div>
-            </div>
-
-            <button className='w-full h-[48px] border border-gray-300 py-2 text-sm rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
-              <Image src="/google.png" alt="Google Icon" width={20} height={20} />
-            </button>
-
-            <p className='text-[13px] text-gray-600 mt-4 mb-4 text-center'>
-              Don't have an account? <Link href="/signup" className='text-[#5075FF] hover:underline'>Sign up</Link>
-            </p>
           </div>
         </div>
       </div>
-    </main>
-  )
+
+      {/* Footer */}
+      <footer className="px-6 py-4 flex items-center justify-between text-xs text-white/60 bg-black/30">
+        <span>© monieplug, all right reserved</span>
+        <nav className="flex gap-5">
+          <a href="/terms"   className="hover:text-white transition-colors">Terms</a>
+          <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
+          <a href="/cookies" className="hover:text-white transition-colors">Cookies</a>
+        </nav>
+      </footer>
+    </div>
+  );
 }
-
-const SignInPage = () => (
-  <Suspense fallback={<div>Loading...</div>}>
-    <LoginUI />
-  </Suspense>
-);
-
-export default SignInPage;

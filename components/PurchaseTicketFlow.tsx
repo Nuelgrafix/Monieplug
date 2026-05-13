@@ -19,14 +19,14 @@ import {
   Ticket,
   Plus,
   Minus,
-  CreditCard,
   CheckCircle2,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CreateStep = "describe" | "tickets";
-type BuyStep = "choose" | "contact" | "checkout" | "success";
+type BuyStep = "choose" | "contact" | "checkout" | "transfer" | "card" | "success";
+type Method = "card" | "transfer" | null;
 
 interface TicketVariation {
   id: number;
@@ -101,26 +101,32 @@ function OrderSummary({
   onAction,
   actionDisabled = false,
   actionLabel = "Continue",
+  fee,
+  charges: chargesProp,
 }: {
-  ticketPrice: number;
+  ticketPrice?: number;
   qty?: number;
   isCheckout?: boolean;
   onAction: () => void;
   actionDisabled?: boolean;
   actionLabel?: string;
+  fee?: number;
+  charges?: number;
 }) {
-  const subtotal = ticketPrice * qty + CHARGES;
+  const charges = chargesProp ?? CHARGES;
+  const ticketFee = fee ?? (ticketPrice ?? 0) * qty;
+  const subtotal = ticketFee + charges;
   return (
     <div className="w-full sm:w-64 flex-shrink-0 bg-white rounded-2xl p-5 shadow-sm self-start">
       <h3 className="text-base font-bold text-gray-900 mb-4">Order Summary</h3>
       <div className="space-y-2 text-sm mb-4">
         <div className="flex justify-between text-gray-600">
-          <span>{isCheckout ? `Summary (${qty} ticket)` : "Ticket fee"}</span>
-          <span>{fmt(ticketPrice * qty)}</span>
+          <span>{isCheckout ? `Summary (${qty} ticket${qty > 1 ? 's' : ''})` : "Ticket fee"}</span>
+          <span>{fmt(ticketFee)}</span>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Charges</span>
-          <span>{fmt(CHARGES)}</span>
+          <span>{fmt(charges)}</span>
         </div>
         <div className="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-2 mt-2">
           <span>{isCheckout ? "Total" : "Subtotal"}</span>
@@ -370,13 +376,26 @@ export function CreateEventModal({ onClose }: { onClose?: () => void }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
+  // Payment config
+  const BANK_NAME = "FidelityMoniePlug";
+  const ACCT_NUMBER = "9038340539";
+  const ACCT_NAME = "Emmanuel N.";
+
   const [step, setStep] = useState<BuyStep>("choose");
+  const [method, setMethod] = useState<Method>(null);
+  const [copied, setCopied] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const { selectedTicketIndex, quantity, contactInfo, purchaseLoading, purchaseSuccess } = useSelector((state: RootState) => state.tickets);
 
   const ticket = TICKET_OPTIONS[selectedTicketIndex];
   const emailsMatch = contactInfo.email && contactInfo.email === contactInfo.confirmEmail;
   const contactValid = contactInfo.fullName.trim() && emailsMatch;
+
+  const copy = () => {
+    navigator.clipboard.writeText(ACCT_NUMBER);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (step === "success" || purchaseSuccess) {
     return (
@@ -412,6 +431,7 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           if (step === "choose") onClose();
           else if (step === "contact") setStep("choose");
           else if (step === "checkout") setStep("contact");
+          else if (step === "transfer" || step === "card") setStep("checkout");
         }}
         className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 mb-4"
       >
@@ -498,18 +518,77 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           {step === "checkout" && (
             <>
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Payment method</h2>
-              <div className="border border-gray-200 rounded-xl p-4 flex items-start gap-3 w-48">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <CreditCard size={16} className="text-gray-500" />
+              <div className="flex gap-3 flex-wrap">
+                {(["card", "transfer"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMethod(m)}
+                    className={`flex items-center gap-2 border rounded-lg px-4 py-2.5 text-sm transition-all ${
+                      method === m
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-300 text-gray-600 hover:border-gray-400"
+                    }`}
+                  >
+                    {m === "card" ? (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={1.8}>
+                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                        <path d="M2 10h20" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    )}
+                    {m === "card" ? "Pay with Bank card" : "Transfer"}
+                    <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors ${
+                      method === m ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                    }`} />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* STEP: Bank Transfer */}
+          {step === "transfer" && (
+            <>
+              <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Transfer</h2>
+              <p className="text-sm text-gray-500 mb-4">Make payment through bank transfer to</p>
+
+              <div className="border border-gray-200 rounded-xl px-6 py-5 inline-block min-w-[220px]">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl font-bold text-[#2338e0] tracking-wide">{ACCT_NUMBER}</span>
+                  <button onClick={copy} title="Copy account number" className="text-gray-400 hover:text-gray-700 transition-colors">
+                    {copied ? (
+                      <CheckCircle2 size={20} />
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth={1.8}>
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-gray-800">Pay from Wallet</span>
-                    <span className="w-2 h-2 rounded-full bg-orange-400" />
-                  </div>
-                  <p className="text-xs text-[#1E35C8] font-medium">Bal. ₦0.0</p>
-                  <p className="text-xs text-orange-500">Insufficient</p>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span className="text-[#2338e0] font-medium">{BANK_NAME}</span>
+                  <span>{ACCT_NAME}</span>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* STEP: Bank Card */}
+          {step === "card" && (
+            <>
+              <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Card</h2>
+              <p className="text-sm text-gray-500 mb-4">Add your bank card to make payment</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input placeholder="Bank name" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input placeholder="Card number" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" inputMode="numeric" maxLength={19} />
+                <input placeholder="Expiry date: MM/YY" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input placeholder="CVV" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" maxLength={4} type="password" />
+                <input placeholder="Card pin" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 sm:col-span-1" maxLength={4} type="password" />
               </div>
             </>
           )}
@@ -517,24 +596,28 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
 
         {/* ── Order Summary ── */}
         <OrderSummary
-          ticketPrice={ticket.price}
+          ticketPrice={step === "checkout" ? undefined : ticket.price}
           qty={quantity}
-          isCheckout={step !== "choose"}
+          isCheckout={step !== "choose" && step !== "contact"}
+          fee={step === "checkout" ? ticket.price * quantity : undefined}
+          charges={step === "checkout" ? CHARGES : undefined}
           onAction={() => {
             if (step === "choose") setStep("contact");
             else if (step === "contact" && contactValid) setStep("checkout");
-            else if (step === "checkout") {
+            else if (step === "checkout" && method) {
+              setStep(method as "transfer" | "card");
+            }
+            else if (step === "transfer") {
               dispatch(purchaseStart());
-              // Here you would typically make an API call
-              // For now, we'll simulate success
-              setTimeout(() => {
-                // dispatch(purchaseSuccess());
-                setStep("success");
-              }, 2000);
+              setTimeout(() => setStep("success"), 2000);
+            }
+            else if (step === "card") {
+              dispatch(purchaseStart());
+              setTimeout(() => setStep("success"), 2000);
             }
           }}
-          actionDisabled={(step === "contact" && !contactValid) || purchaseLoading}
-          actionLabel={purchaseLoading ? "Processing..." : step === "checkout" ? "Checkout" : "Continue"}
+          actionDisabled={(step === "contact" && !contactValid) || (step === "checkout" && !method) || purchaseLoading}
+          actionLabel={purchaseLoading ? "Processing..." : step === "transfer" ? "I have paid" : step === "card" ? "Checkout" : step === "checkout" ? "Continue" : "Continue"}
         />
       </div>
     </div>
