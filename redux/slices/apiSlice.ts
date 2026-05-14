@@ -83,6 +83,13 @@ export const apiSlice = createApi({
         body: { email },
       }),
     }),
+    sendOtp: builder.mutation({
+      query: (email) => ({
+        url: '/authent/send-otp',
+        method: 'POST',
+        body: { email },
+      }),
+    }),
     getBalance: builder.mutation({
       query: (data) => ({
         url: '/authent/get-balance',
@@ -152,6 +159,7 @@ export const {
   usePaymentWebhookMutation,
   useGetCurrentUserQuery,
   useForgotPasswordMutation,
+  useSendOtpMutation,
   useGetBalanceMutation,
   useGetEventsQuery,
   useGetEventByIdQuery,
