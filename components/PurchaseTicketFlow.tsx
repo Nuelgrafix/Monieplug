@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '@/redux/store';
+import {
+  selectTicket,
+  setQuantity,
+  updateContactInfo,
+  purchaseStart,
+  purchaseSuccess,
+  resetTicketFlow,
+} from '@/redux/slices/ticketsSlice';
 import {
   X,
   ArrowLeft,
@@ -137,7 +146,7 @@ function OrderSummary({
 // CREATE EVENT MODAL  (screens 1 + 2 + 3)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function CreateEventModal({ onClose }: { onClose: () => void }) {
+export function CreateEventModal({ onClose }: { onClose?: () => void }) {
   const [step, setStep] = useState<CreateStep>("describe");
   const [description, setDescription] = useState("");
   const [previewImg, setPreviewImg] = useState<string | null>(null);
@@ -362,17 +371,14 @@ export function CreateEventModal({ onClose }: { onClose: () => void }) {
 
 export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<BuyStep>("choose");
-  const [selectedTicket, setSelectedTicket] = useState(0);
-  const [qty, setQty] = useState(1);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [confirmEmail, setConfirmEmail] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const { selectedTicketIndex, quantity, contactInfo, purchaseLoading, purchaseSuccess } = useSelector((state: RootState) => state.tickets);
 
-  const ticket = TICKET_OPTIONS[selectedTicket];
-  const emailsMatch = email && email === confirmEmail;
-  const contactValid = fullName.trim() && emailsMatch;
+  const ticket = TICKET_OPTIONS[selectedTicketIndex];
+  const emailsMatch = contactInfo.email && contactInfo.email === contactInfo.confirmEmail;
+  const contactValid = contactInfo.fullName.trim() && emailsMatch;
 
-  if (step === "success") {
+  if (step === "success" || purchaseSuccess) {
     return (
       <div className="flex-1 bg-[#F5F5F5] min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm p-16 flex flex-col items-center text-center">
@@ -382,10 +388,13 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           <h2 className="text-lg font-bold text-gray-900 mb-2">Ticket purchase successful</h2>
           <p className="text-sm text-gray-500">
             Copy your ticket has been sent to this email:{" "}
-            <span className="font-bold text-gray-800">{email || "email@gmail.com"}</span>
+            <span className="font-bold text-gray-800">{contactInfo.email || "email@gmail.com"}</span>
           </p>
           <button
-            onClick={onClose}
+            onClick={() => {
+              dispatch(resetTicketFlow());
+              onClose();
+            }}
             className="mt-8 px-8 py-3 rounded-xl bg-[#1E35C8] text-white text-sm font-semibold hover:bg-[#1a2eb0] transition-all"
           >
             Back to Home
@@ -424,9 +433,9 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
                 {TICKET_OPTIONS.map((t, i) => (
                   <button
                     key={t.label}
-                    onClick={() => setSelectedTicket(i)}
+                    onClick={() => dispatch(selectTicket(i))}
                     className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all w-28 ${
-                      selectedTicket === i ? "border-orange-400 shadow-sm" : "border-gray-200 hover:border-gray-300"
+                      selectedTicketIndex === i ? "border-orange-400 shadow-sm" : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${t.color}`}>
@@ -447,35 +456,35 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input
                   placeholder="Full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={contactInfo.fullName}
+                  onChange={(e) => dispatch(updateContactInfo({ fullName: e.target.value }))}
                   className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30"
                 />
                 <input
                   type="email"
                   placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={contactInfo.email}
+                  onChange={(e) => dispatch(updateContactInfo({ email: e.target.value }))}
                   className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30"
                 />
                 {/* Qty picker */}
                 <div className="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-400">
                   <span className="flex-1">Copy of ticket</span>
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="text-gray-500 hover:text-gray-800">
+                  <button onClick={() => dispatch(setQuantity(quantity - 1))} className="text-gray-500 hover:text-gray-800">
                     <Minus size={14} />
                   </button>
-                  <span className="text-gray-800 font-medium w-4 text-center">{qty}</span>
-                  <button onClick={() => setQty((q) => q + 1)} className="text-gray-500 hover:text-gray-800">
+                  <span className="text-gray-800 font-medium w-4 text-center">{quantity}</span>
+                  <button onClick={() => dispatch(setQuantity(quantity + 1))} className="text-gray-500 hover:text-gray-800">
                     <Plus size={14} />
                   </button>
                 </div>
                 <input
                   type="email"
                   placeholder="Confirm email address"
-                  value={confirmEmail}
-                  onChange={(e) => setConfirmEmail(e.target.value)}
+                  value={contactInfo.confirmEmail}
+                  onChange={(e) => dispatch(updateContactInfo({ confirmEmail: e.target.value }))}
                   className={`border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30 ${
-                    confirmEmail && !emailsMatch ? "border-red-300" : "border-gray-200"
+                    contactInfo.confirmEmail && !emailsMatch ? "border-red-300" : "border-gray-200"
                   }`}
                 />
               </div>
@@ -509,15 +518,23 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
         {/* ── Order Summary ── */}
         <OrderSummary
           ticketPrice={ticket.price}
-          qty={qty}
+          qty={quantity}
           isCheckout={step !== "choose"}
           onAction={() => {
             if (step === "choose") setStep("contact");
             else if (step === "contact" && contactValid) setStep("checkout");
-            else if (step === "checkout") setStep("success");
+            else if (step === "checkout") {
+              dispatch(purchaseStart());
+              // Here you would typically make an API call
+              // For now, we'll simulate success
+              setTimeout(() => {
+                // dispatch(purchaseSuccess());
+                setStep("success");
+              }, 2000);
+            }
           }}
-          actionDisabled={step === "contact" && !contactValid}
-          actionLabel={step === "checkout" ? "Checkout" : "Continue"}
+          actionDisabled={(step === "contact" && !contactValid) || purchaseLoading}
+          actionLabel={purchaseLoading ? "Processing..." : step === "checkout" ? "Checkout" : "Continue"}
         />
       </div>
     </div>

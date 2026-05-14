@@ -44,7 +44,7 @@ function Backdrop({ children }: { children: React.ReactNode }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function SendMoneyFlow() {
+ function SendMoneyFlow() {
   const router = useRouter();
 
   // Step state

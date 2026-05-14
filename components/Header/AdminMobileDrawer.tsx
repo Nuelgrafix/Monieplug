@@ -9,10 +9,9 @@ interface AdminMobileDrawerProps {
   isOpen: boolean
   handleLogout: () => void
   onClose: () => void
-  btnRef: React.RefObject<HTMLButtonElement>
 }
 
-export default function AdminMobileDrawer({ isOpen, handleLogout, onClose, btnRef }: AdminMobileDrawerProps) {
+export default function AdminMobileDrawer({ isOpen, handleLogout, onClose }: AdminMobileDrawerProps) {
   const pathname = usePathname()
 
   if (!isOpen) return null

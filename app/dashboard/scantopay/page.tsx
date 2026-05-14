@@ -24,7 +24,7 @@ interface Variation {
   name: string;
 }
 
-export function SetupPaymentQR() {
+ function SetupPaymentQR() {
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [description, setDescription] = useState("");

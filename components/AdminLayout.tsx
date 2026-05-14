@@ -51,7 +51,6 @@ export default function AdminLayout({
           isOpen={open}
           handleLogout={handleLogout}
           onClose={() => setOpen(false)}
-          btnRef={btnRef}
         />
 
         <div className="sm:col-span-2 w-[300px] hidden sm:block fixed h-[100vh] border-r-[#eee] border-r">

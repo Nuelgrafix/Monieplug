@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const slideImages = [
   {
@@ -18,6 +19,7 @@ const slideImages = [
 ];
 
 export default function HeroPage() {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
@@ -148,7 +150,10 @@ export default function HeroPage() {
             Easily share an event, get payment for your services or business and
             manage your funds super easy.
           </p>
-          <button className="mt-2 bg-white text-[#1130b8] font-semibold text-sm sm:text-base px-8 py-3 rounded-full shadow-lg hover:bg-blue-50 hover:scale-105 active:scale-95 transition-all duration-200">
+          <button
+            className="mt-2 bg-white text-[#1130b8] font-semibold text-sm sm:text-base px-8 py-3 rounded-full shadow-lg hover:bg-blue-50 hover:scale-105 active:scale-95 transition-all duration-200"
+            onClick={() => router.push('/signup')}
+          >
             Create an account
           </button>
         </div>

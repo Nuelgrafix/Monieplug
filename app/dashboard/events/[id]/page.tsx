@@ -8,15 +8,7 @@ import { PurchaseTicketFlow } from '@/components/PurchaseTicketFlow'
 import CreateEventModal from '@/components/CreateEventModal'
 import CreateEventTickets from '@/components/CreateEventTickets'
 
-const page = () => {
-  return (
-    <div><EventDetailPage/></div>
-  )
-}
-
-export default page
-
-export function EventDetailPage() {
+export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = parseInt(params.id as string);
@@ -126,17 +118,7 @@ export function EventDetailPage() {
               if (block.type === "paragraph") {
                 return <p key={i}>{block.text}</p>;
               }
-              if (block.type === "list") {
-                return (
-                  <ul key={i} className="list-disc list-inside space-y-1 pl-1">
-                    {block?.items!.map((item:any, j) => (
-                      <li key={j} className="text-gray-700">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                );
-              }
+
               return null;
             })}
           </div>

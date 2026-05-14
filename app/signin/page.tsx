@@ -1,16 +1,26 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '@/redux/store';
+import { loginStart, loginSuccess, loginFailure, clearError } from '@/redux/slices/authSlice';
+import { useLoginMutation } from '@/redux/slices/apiSlice';
 
 const LoginUI: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const [login, { isLoading: apiLoading }] = useLoginMutation();
+
+  // Get redirect URL from query params
+  const redirect = searchParams.get('redirect') || '/dashboard';
 
   const handleContinue = async () => {
     if (!email || !password) {
@@ -18,25 +28,32 @@ const LoginUI: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
+    dispatch(loginStart());
 
     try {
-      // Your login logic here (API call, validation, etc.)
-      // const response = await loginUser({ email, password });
+      const result = await login({ email, password }).unwrap();
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Dispatch login success with user data and token
+      dispatch(loginSuccess({
+        user: result.user,
+        token: result.token
+      }));
 
-      // Redirect to dashboard or appropriate page
-      router.push('/dashboard');
+      // Redirect to the intended page or dashboard
+      router.push(redirect);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      alert('Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      dispatch(loginFailure(error?.data?.message || 'Login failed. Please try again.'));
     }
   };
+
+  // Clear error when component unmounts or email/password changes
+  useEffect(() => {
+    if (error) {
+      dispatch(clearError());
+    }
+  }, [email, password, dispatch]);
 
   return (
     <main className='bg-[#5075FF] lg:bg-white min-h-screen flex items-center justify-center p-2 sm:p-4'>
@@ -86,13 +103,18 @@ const LoginUI: React.FC = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              {error && (
+                <div className='w-full p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm'>
+                  {error}
+                </div>
+              )}
             </div>
             <button
               onClick={handleContinue}
-              disabled={isLoading}
+              disabled={loading || apiLoading}
               className='w-full bg-[#1843E2] flex justify-center items-center gap-2 hover:bg-[#4060E8] transition-colors text-[18px] border-solid border-2 border-[#1843E2] max-h-[60px] rounded-[8px] text-white py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
             >
-              {isLoading ? 'Loading...' : 'Continue'}
+              {(loading || apiLoading) ? 'Signing in...' : 'Continue'}
             </button>
             <div className='flex items-center gap-4 w-[30px] mx-auto sm:w-[40px] my-2'>
               <div className='flex-1 h-px bg-gray-300'></div>
@@ -159,10 +181,10 @@ const LoginUI: React.FC = () => {
               </div>
               <button
                 onClick={handleContinue}
-                disabled={isLoading}
+                disabled={loading || apiLoading}
                 className='w-full p-3 bg-[#1843E2] hover:bg-[#4060E8] transition-colors h-[48px] rounded-[8px] text-white text-[16px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
               >
-                {isLoading ? 'Loading...' : 'Continue'}
+                {(loading || apiLoading) ? 'Signing in...' : 'Continue'}
               </button>
             </div>
 
@@ -184,4 +206,10 @@ const LoginUI: React.FC = () => {
   )
 }
 
-export default LoginUI;
+const SignInPage = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <LoginUI />
+  </Suspense>
+);
+
+export default SignInPage;
