@@ -1,48 +1,68 @@
 "use client";
 
-import { useRef, useState, KeyboardEvent, ChangeEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState, AppDispatch } from "@/redux/store";
+import { loginStart, loginSuccess, loginFailure } from "@/redux/slices/authSlice";
+import { useLoginMutation } from "@/redux/slices/apiSlice";
+import * as yup from "yup";
+import toast from "react-hot-toast";
 
-// ── Swap these paths ──
-const BG_IMAGE   = "/subg.png";   // blurred background photo
-const SIDE_IMAGE = "/su1.png";  // man on phone (left panel)
-const LOGO_SRC   = "/logo.jpg";        // Monieplug logo
+const BG_IMAGE   = "/subg.png";
+const SIDE_IMAGE = "/su1.png";
+const LOGO_SRC   = "/logo.jpg";
 
 const COUNTRIES = [
   { code: "NG", dial: "+234" },
-  { code: "US", dial: "+1" },
-  { code: "GB", dial: "+44" },
+  { code: "US", dial: "+1"   },
+  { code: "GB", dial: "+44"  },
   { code: "GH", dial: "+233" },
   { code: "KE", dial: "+254" },
 ];
 
+const schema = yup.object().shape({
+  phone:    yup.string().required("Phone number is required"),
+  password: yup.string().required("Password is required"),
+});
+
 export default function SignInPage() {
-  const [country, setCountry]   = useState(COUNTRIES[0]);
-  const [pin, setPin]           = useState(["", "", "", "", "", ""]);
-  const [showPin, setShowPin]   = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const refs = Array.from({ length: 6 }, () => useRef<HTMLInputElement>(null));
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const dispatch     = useDispatch<AppDispatch>();
+  const [login]      = useLoginMutation();
 
-  const handlePinChange = (i: number, e: ChangeEvent<HTMLInputElement>) => {
-    const ch = e.target.value.replace(/\D/, "").slice(-1);
-    const next = [...pin];
-    next[i] = ch;
-    setPin(next);
-    if (ch && i < 5) refs[i + 1].current?.focus();
-  };
+  const [country,      setCountry]      = useState(COUNTRIES[0]);
+  const [phone,        setPhone]        = useState("");
+  const [password,     setPassword]     = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading,      setLoading]      = useState(false);
 
-  const handlePinKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !pin[i] && i > 0) {
-      refs[i - 1].current?.focus();
-    }
-  };
+  const isReady = phone.trim() !== "" && password.trim() !== "";
 
-  const isReady = pin.every((d) => d !== "");
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isReady) return;
-    setLoading(true);
-    setTimeout(() => setLoading(false), 1500); // simulate API call
+
+    try {
+      await schema.validate({ phone, password });
+
+      dispatch(loginStart());
+      setLoading(true);
+
+      const result = await login({ phone, password }).unwrap();
+
+      dispatch(loginSuccess({ user: result.user, token: result.token }));
+
+      const redirect = searchParams.get("redirect") || "/dashboard";
+      router.push(redirect);
+    } catch (err: any) {
+      setLoading(false);
+      const msg = err?.data?.message || err?.message || "Sign in failed";
+      dispatch(loginFailure(msg));
+      toast.error(msg);
+    }
   };
 
   return (
@@ -53,14 +73,14 @@ export default function SignInPage() {
       {/* Dark blurred overlay */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 backdrop-blur-sm bg-black/55">
 
-        {/* ── Outer rounded frame (the dark card visible in screenshot) ── */}
+        {/* Outer rounded dark frame */}
         <div className="w-full max-w-[740px] bg-white/10 backdrop-blur-md rounded-[22px] p-4 shadow-2xl">
 
-          {/* ── Inner white card ── */}
+          {/* Inner white card */}
           <div className="bg-white rounded-2xl overflow-hidden flex">
 
             {/* Left: image panel */}
-            <div className="relative hidden sm:flex flex-col justify-end w-[260px] flex-shrink-0 min-h-[370px]">
+            <div className="relative hidden sm:flex flex-col justify-end w-[260px] flex-shrink-0 min-h-[400px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={SIDE_IMAGE}
@@ -71,6 +91,7 @@ export default function SignInPage() {
 
             {/* Right: form panel */}
             <div className="flex-1 flex flex-col justify-center px-8 py-10">
+
               {/* Heading */}
               <p className="text-gray-500 text-sm mb-0.5 tracking-wide">
                 Welcome &nbsp;back to Monieplug
@@ -79,75 +100,58 @@ export default function SignInPage() {
                 Sign in
               </h1>
 
-              {/* Phone / country selector */}
+              {/* Phone + country */}
               <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden mb-4 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
-                <div className="relative flex items-center">
-                  <select
-                    value={country.code}
-                    onChange={(e) =>
-                      setCountry(
-                        COUNTRIES.find((c) => c.code === e.target.value) ||
-                          COUNTRIES[0]
-                      )
-                    }
-                    className="appearance-none bg-transparent pl-3 pr-6 py-3 text-sm text-gray-700 focus:outline-none cursor-pointer"
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.code} {c.dial}
-                      </option>
-                    ))}
-                  </select>
-                  {/* Chevron */}
-                  <svg
-                    viewBox="0 0 16 16"
-                    className="absolute right-1 w-3 h-3 text-gray-400 pointer-events-none fill-none stroke-current"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6l4 4 4-4" />
-                  </svg>
-                </div>
-                {/* Divider */}
-                <div className="w-px h-5 bg-gray-200" />
                 <input
                   type="tel"
                   placeholder="Phone number"
-                  className="flex-1 px-3 py-3 text-sm focus:outline-none text-gray-700 placeholder-gray-400"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  className="flex-1 px-3 py-3 text-sm focus:outline-none text-gray-700 placeholder-gray-400 min-w-0"
                 />
               </div>
 
-              {/* PIN boxes */}
-              <div className="flex gap-2 mb-1">
-                {pin.map((val, i) => (
-                  <input
-                    key={i}
-                    ref={refs[i]}
-                    type={showPin ? "text" : "password"}
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={val}
-                    onChange={(e) => handlePinChange(i, e)}
-                    onKeyDown={(e) => handlePinKey(i, e)}
-                    className="w-full aspect-square max-w-[52px] text-center text-base font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                  />
-                ))}
+              {/* Password */}
+              <div className="relative mb-2">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
 
               {/* Forgot / Hide row */}
               <div className="flex justify-between items-center mb-5">
-                <button className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                <button
+                  type="button"
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  onClick={()=>router.push('/forgot-password')}
+                >
                   Forget password?
                 </button>
                 <button
-                  onClick={() => setShowPin((s) => !s)}
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
                   className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {showPin ? "Hide password" : "Hide password"}
+                  {showPassword ? "Hide password" : "Show password"}
                 </button>
               </div>
 
               {/* Sign in button */}
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={!isReady || loading}
                 className={`w-full py-3 rounded-lg text-white text-sm font-semibold transition-all duration-200
@@ -169,20 +173,29 @@ export default function SignInPage() {
                 )}
               </button>
 
-              {/* Sign up prompt */}
-              <p className="text-center text-xs text-gray-500 mt-4">
+              {/* Forgot Password */}
+              <p className="text-center text-xs text-gray-500 mt-2">
+                <Link href="/forgot-password" className="text-[#2338e0] font-semibold hover:underline">
+                  Forgot Password?
+                </Link>
+              </p>
+
+              {/* Sign up link */}
+              <p className="text-center text-xs text-gray-500 mt-2">
                 New to Monieplug?{" "}
-                <Link
-                  href="/signup"
-                  className="text-[#2338e0] font-semibold hover:underline"
-                >
+                <Link href="/signup" className="text-[#2338e0] font-semibold hover:underline">
                   Sign Up
                 </Link>
               </p>
+
             </div>
+            {/* end right panel */}
           </div>
+          {/* end inner white card */}
         </div>
+        {/* end outer frame */}
       </div>
+      {/* end overlay */}
 
       {/* Footer */}
       <footer className="px-6 py-4 flex items-center justify-between text-xs text-white/60 bg-black/30">
@@ -193,6 +206,7 @@ export default function SignInPage() {
           <a href="/cookies" className="hover:text-white transition-colors">Cookies</a>
         </nav>
       </footer>
+
     </div>
   );
 }

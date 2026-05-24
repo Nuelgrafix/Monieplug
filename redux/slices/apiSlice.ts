@@ -1,153 +1,225 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getCookie } from "cookies-next";
+
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_BACKEND_API,
   prepareHeaders: (headers) => {
     const token = getCookie("USER");
-    headers.set("Authorization", `Bearer ${token}`);
-    // headers.set("accept", "application/json");
-    // if(!headers.has("Content-Type")){
-    //   headers.set("Content-Type","");
-    // }
-   
+    if (token) headers.set("Authorization", `Token ${token}`);
   },
 });
 
 export const apiSlice = createApi({
   baseQuery,
   endpoints: (builder) => ({
-    // Authentication endpoints
+
+    // ── Auth ──────────────────────────────────────────────
     login: builder.mutation({
       query: (credentials) => ({
-        url: '/authent/login',
-        method: 'POST',
-        body: credentials,
+        url: "/authent/login/",
+        method: "POST",
+        body: { phone: credentials.phone, password: credentials.password },
       }),
     }),
     signup: builder.mutation({
       query: (userData) => ({
-        url: '/authent/signup',
-        method: 'POST',
+        url: "/authent/signup/",
+        method: "POST",
         body: userData,
       }),
     }),
     resetPassword: builder.mutation({
       query: (data) => ({
-        url: '/authent/reset-password',
-        method: 'POST',
+        url: "/authent/reset-password/",
+        method: "POST",
         body: data,
       }),
     }),
     setPin: builder.mutation({
       query: (pin) => ({
-        url: '/authent/set-pin',
-        method: 'POST',
+        url: "/authent/set-pin/",
+        method: "POST",
         body: { pin },
       }),
     }),
     transferFunds: builder.mutation({
       query: (data) => ({
-        url: '/authent/transfer-funds',
-        method: 'POST',
+        url: "/authent/transfer-funds/",
+        method: "POST",
         body: data,
       }),
     }),
     verifyAccount: builder.mutation({
       query: (data) => ({
-        url: '/authent/verify-account',
-        method: 'POST',
+        url: "/authent/verify-account/",
+        method: "POST",
         body: data,
       }),
     }),
     verifyEmail: builder.mutation({
-      query: (code) => ({
-        url: '/authent/verify-email',
-        method: 'POST',
-        body: { code },
-      }),
-    }),
-    paymentWebhook: builder.mutation({
       query: (data) => ({
-        url: '/authent/webhook/payment',
-        method: 'POST',
+        url: "/authent/verify-email/",
+        method: "POST",
         body: data,
-      }),
-    }),
-    getCurrentUser: builder.query({
-      query: () => '/auth/me',
-    }),
-    forgotPassword: builder.mutation({
-      query: (email) => ({
-        url: '/authent/forgot-password',
-        method: 'POST',
-        body: { email },
       }),
     }),
     sendOtp: builder.mutation({
       query: (email) => ({
-        url: '/authent/send-otp',
-        method: 'POST',
+        url: "/authent/send-otp/",
+        method: "POST",
         body: { email },
+      }),
+    }),
+    forgotPassword: builder.mutation({
+      query: (email) => ({
+        url: "/authent/forgot-password/",
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    paymentWebhook: builder.mutation({
+      query: (data) => ({
+        url: "/authent/webhook/payment/",
+        method: "POST",
+        body: data,
       }),
     }),
     getBalance: builder.mutation({
       query: (data) => ({
-        url: '/authent/get-balance',
-        method: 'POST',
+        url: "/authent/get-balance/",
+        method: "POST",
         body: data,
       }),
     }),
+    getUserById: builder.query({
+      query: (id) => `/authent/users/${id}/`,
+    }),
 
-    // Events endpoints
+    // ── Events ────────────────────────────────────────────
     getEvents: builder.query({
-      query: () => '/events',
+      query: () => "/event/events/",
     }),
     getEventById: builder.query({
-      query: (id) => `/events/${id}`,
+      query: (id) => `/event/events/${id}/`,
     }),
     createEvent: builder.mutation({
       query: (eventData) => ({
-        url: '/events',
-        method: 'POST',
+        url: "/event/events/",
+        method: "POST",
         body: eventData,
       }),
     }),
+    updateEvent: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/event/events/${id}/`,
+        method: "PUT",
+        body: data,
+      }),
+    }),
+    patchEvent: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/event/events/${id}/`,
+        method: "PATCH",
+        body: data,
+      }),
+    }),
+    deleteEvent: builder.mutation({
+      query: (id) => ({
+        url: `/event/events/${id}/`,
+        method: "DELETE",
+      }),
+    }),
 
-    // Tickets endpoints
+    // ── Tickets ───────────────────────────────────────────
+    getTickets: builder.query({
+      query: () => "/event/tickets/",
+    }),
+    getTicketById: builder.query({
+      query: (id) => `/event/tickets/${id}/`,
+    }),
+    createTicket: builder.mutation({
+      query: (ticketData) => ({
+        url: "/event/tickets/",
+        method: "POST",
+        body: ticketData,
+      }),
+    }),
+    updateTicket: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/event/tickets/${id}/`,
+        method: "PUT",
+        body: data,
+      }),
+    }),
+    patchTicket: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/event/tickets/${id}/`,
+        method: "PATCH",
+        body: data,
+      }),
+    }),
+    deleteTicket: builder.mutation({
+      query: (id) => ({
+        url: `/event/tickets/${id}/`,
+        method: "DELETE",
+      }),
+    }),
     purchaseTicket: builder.mutation({
       query: (ticketData) => ({
-        url: '/tickets/purchase',
-        method: 'POST',
+        url: "/tickets/purchase/",
+        method: "POST",
         body: ticketData,
       }),
     }),
     getUserTickets: builder.query({
-      query: () => '/tickets/my-tickets',
+      query: () => "/tickets/my-tickets/",
     }),
 
-    // Banks endpoints
+    // ── Banks ─────────────────────────────────────────────
     getBanks: builder.query({
-      query: () => '/authent/banks',
+      query: () => "/authent/banks/",
     }),
 
-    // Payment endpoints
+    // ── Payments ──────────────────────────────────────────
     initiatePayment: builder.mutation({
       query: (paymentData) => ({
-        url: '/payments/initiate',
-        method: 'POST',
+        url: "/payments/initiate/",
+        method: "POST",
         body: paymentData,
       }),
     }),
     verifyPayment: builder.mutation({
       query: (reference) => ({
-        url: `/payments/verify/${reference}`,
-        method: 'GET',
+        url: `/payments/verify/${reference}/`,
+        method: "GET",
+      }),
+    }),
+
+    // ── Scan2Pay ──────────────────────────────────────────
+    scan2payCheckout: builder.mutation({
+      query: (data) => ({
+        url: "/scan2pay/checkout/",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    scan2payUnregistered: builder.mutation({
+      query: (data) => ({
+        url: "/scan2pay/unregistered/",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    createQRCode: builder.mutation({
+      query: (data) => ({
+        url: "/scan2pay/vendor/qrcode/create/",
+        method: "POST",
+        body: data,
       }),
     }),
   }),
 });
 
-// Export hooks for usage in functional components
 export const {
   useLoginMutation,
   useSignupMutation,
@@ -157,16 +229,28 @@ export const {
   useVerifyAccountMutation,
   useVerifyEmailMutation,
   usePaymentWebhookMutation,
-  useGetCurrentUserQuery,
   useForgotPasswordMutation,
   useSendOtpMutation,
   useGetBalanceMutation,
   useGetEventsQuery,
   useGetEventByIdQuery,
   useCreateEventMutation,
+  useUpdateEventMutation,
+  usePatchEventMutation,
+  useDeleteEventMutation,
+  useGetTicketsQuery,
+  useCreateTicketMutation,
+  useGetTicketByIdQuery,
+  useUpdateTicketMutation,
+  usePatchTicketMutation,
+  useDeleteTicketMutation,
   usePurchaseTicketMutation,
   useGetUserTicketsQuery,
+  useGetUserByIdQuery,
   useGetBanksQuery,
   useInitiatePaymentMutation,
   useVerifyPaymentMutation,
+  useScan2payCheckoutMutation,
+  useScan2payUnregisteredMutation,
+  useCreateQRCodeMutation,
 } = apiSlice;

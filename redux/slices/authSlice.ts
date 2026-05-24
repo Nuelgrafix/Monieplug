@@ -45,6 +45,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     saveUser: (state, action) => {
+      console.log("action", action.payload)
       if (action.payload.talentData) {
         setCookie("TalentId", action.payload.talentData.id);
       }
@@ -64,8 +65,6 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       deleteCookie("USER");
-      deleteCookie("TalentId");
-      deleteCookie("CompanyId");
       localStorage.removeItem("USER");
       state.loading = false;
       state.error = null;

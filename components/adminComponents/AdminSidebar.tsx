@@ -21,7 +21,7 @@ export default function AdminSidebar({ AdminNavLinks, handleLogout }: AdminSideb
 
   return (
     <div className="flex flex-col h-full text-white">
-  <Sidebar/>
+  <Sidebar handleLogout={handleLogout} />
     </div>
   )
 }
@@ -36,7 +36,7 @@ const navItems = [
   { label: "Profile", href: "/dashboard/profile", icon: User },
 ];
 
-export function Sidebar() {
+export function Sidebar({ handleLogout }: { handleLogout: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -77,9 +77,7 @@ export function Sidebar() {
 
       {/* Log Out */}
       <button
-        onClick={() => {
-          /* handle logout */
-        }}
+        onClick={handleLogout}
         className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-all duration-150 mt-auto"
       >
         <LogOut size={16} strokeWidth={2} />
