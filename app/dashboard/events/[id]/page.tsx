@@ -1,38 +1,55 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Calendar, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, Share2, MapPin } from "lucide-react";
 import React, { useState } from 'react'
-import { popularEvents, upcomingEvents } from '@/data/events'
-import { PurchaseTicketFlow } from '@/components/PurchaseTicketFlow'
+import { useGetEventByIdQuery, useCreateTicketMutation } from '@/redux/slices/apiSlice';
+import toast from "react-hot-toast";
 import CreateEventModal from '@/components/CreateEventModal'
 import CreateEventTickets from '@/components/CreateEventTickets'
+
+// Matches the API response from GET /event/events/{id}/
+interface ApiTicket {
+  id: number;
+  name: string;
+  price: string;
+  ticket_image: string;
+}
+
+interface ApiEvent {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  image: string;
+  tickets: ApiTicket[];
+}
 
 export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const id = parseInt(params.id as string);
+  const id = Number(params.id as string);
+
   const [purchaseStep, setPurchaseStep] = useState<'none' | 'describe' | 'tickets'>('none');
-  const [isPurchasing, setIsPurchasing] = useState(false);
 
-  const allEvents = [...popularEvents, ...upcomingEvents];
-  const event = allEvents.find(e => e.id === id);
+  const {
+    data: event,
+    isLoading,
+    isError,
+  } = useGetEventByIdQuery(id, { skip: !id || isNaN(id) });
 
-  if (!event) {
-    return <div>Event not found</div>;
-  }
+  const [createTicket] = useCreateTicketMutation();
 
   const handleShare = async () => {
     if (navigator.share) {
-      await navigator.share({ title: event.title, url: window.location.href });
+      await navigator.share({ title: event?.title, url: window.location.href });
     } else {
       await navigator.clipboard.writeText(window.location.href);
     }
   };
 
   const handleNext = (data: { description: string; image: File | null }) => {
-    // Handle the next step in purchase flow
-    console.log('Next step with data:', data);
     setPurchaseStep('tickets');
   };
 
@@ -44,16 +61,70 @@ export default function EventDetailPage() {
     setPurchaseStep('none');
   };
 
-  const handlePublish = (data: { main: any; variations: any[] }) => {
-    // Handle the publish logic here
-    console.log('Publishing with data:', data);
-    // Navigate to purchase ticket flow
-    setIsPurchasing(true);
-    setPurchaseStep('none');
+  const handlePublish = async (data: { main: any; variations: any[] }) => {
+    try {
+      const { main, variations } = data;
+
+      const createOneTicket = async (ticketData: any) => {
+        const hasFile = ticketData.image && typeof ticketData.image !== "string";
+
+        if (hasFile) {
+          // Use FormData for actual file upload
+          const formData = new FormData();
+          formData.append("event", String(id));
+          formData.append("name", ticketData.name);
+          formData.append("price", ticketData.fee || ticketData.price || "");
+          formData.append("ticket_image", ticketData.image); // the File
+
+          await createTicket(formData).unwrap();
+        } else {
+          // Simple JSON when only URL or no image
+          await createTicket({
+            event: id,
+            name: ticketData.name,
+            price: ticketData.fee || ticketData.price || "",
+            ticket_image: ticketData.image || "",
+          }).unwrap();
+        }
+      };
+
+      if (main?.name) {
+        await createOneTicket(main);
+      }
+
+      for (const v of variations || []) {
+        if (v.name) {
+          await createOneTicket(v);
+        }
+      }
+
+      toast.success("Ticket(s) created successfully!");
+      handleClose();
+    } catch (err: any) {
+      const msg = err?.data?.detail || err?.message || "Failed to create ticket";
+      toast.error(msg);
+    }
   };
 
-  if (isPurchasing) {
-    return <PurchaseTicketFlow onClose={() => setIsPurchasing(false)} />;
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-[#F5F5F5] min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">Loading event...</div>
+      </div>
+    );
+  }
+
+  if (isError || !event) {
+    return (
+      <div className="flex-1 bg-[#F5F5F5] min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">Event not found or failed to load.</p>
+          <button onClick={() => router.back()} className="text-[#1E35C8] text-sm underline">
+            Go back
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -71,8 +142,23 @@ export default function EventDetailPage() {
             <h1 className="text-base font-bold text-gray-900 leading-tight">{event.title}</h1>
             <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
               <Calendar size={12} />
-              <span>{event.date}</span>
+              <span>
+                {new Date(event.date).toLocaleDateString('en-NG', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
             </div>
+            {event.location && (
+              <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500">
+                <MapPin size={12} />
+                <span>{event.location}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -106,40 +192,27 @@ export default function EventDetailPage() {
           </div>
 
           {/* Right – description */}
-          <div className="flex-1 text-sm text-gray-700 leading-relaxed space-y-3">
-            {event.content.map((block, i) => {
-              if (block.type === "heading") {
-                return (
-                  <p key={i} className="font-semibold text-gray-900">
-                    {block.text}
-                  </p>
-                );
-              }
-              if (block.type === "paragraph") {
-                return <p key={i}>{block.text}</p>;
-              }
-
-              return null;
-            })}
+          <div className="flex-1 text-sm text-gray-700 leading-relaxed">
+            <p>{event.description || 'No description available.'}</p>
           </div>
         </div>
-
-        {/* Purchase Ticket Modals */}
-        {purchaseStep === 'describe' && (
-          <CreateEventModal
-            onClose={handleClose}
-            onNext={handleNext}
-          />
-        )}
-
-        {purchaseStep === 'tickets' && (
-          <CreateEventTickets
-            onBack={handleBack}
-            onClose={handleClose}
-            onPublish={handlePublish}
-          />
-        )}
       </div>
+
+      {/* Create Ticket Modals (for adding tickets to this event) */}
+      {purchaseStep === 'describe' && (
+        <CreateEventModal
+          onClose={handleClose}
+          onNext={handleNext}
+        />
+      )}
+
+      {purchaseStep === 'tickets' && (
+        <CreateEventTickets
+          onBack={handleBack}
+          onClose={handleClose}
+          onPublish={handlePublish}
+        />
+      )}
     </div>
   );
 }

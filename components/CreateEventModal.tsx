@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 import { X, Camera } from "lucide-react";
 
 interface CreateEventModalProps {
@@ -13,9 +15,21 @@ interface CreateEventModalProps {
 export default function CreateEventModal({
   onClose,
   onNext,
-  userName = "Emmanuel Nwankwo",
-  userAvatar = "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Emmanuel",
+  userName: propUserName,
+  userAvatar: propUserAvatar,
 }: CreateEventModalProps) {
+  const authUser: any = useSelector((state: RootState) => 
+    state.auth?.user || (state as any).saveCredentials?.loginResponse
+  );
+
+  const displayName = propUserName || 
+    (authUser?.first_name 
+      ? `${authUser.first_name} ${authUser.last_name || ""}`.trim() 
+      : authUser?.name || "User");
+
+  const displayAvatar = propUserAvatar || 
+    authUser?.avatar || 
+    `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${encodeURIComponent(displayName)}`;
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -40,9 +54,9 @@ export default function CreateEventModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full overflow-hidden bg-orange-100 flex-shrink-0">
-              <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
+              <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
             </div>
-            <span className="text-sm font-semibold text-gray-800">{userName}</span>
+            <span className="text-sm font-semibold text-gray-800">{displayName}</span>
           </div>
           <button
             onClick={onClose}

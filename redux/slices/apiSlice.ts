@@ -103,6 +103,7 @@ export const apiSlice = createApi({
       query: (id) => `/event/events/${id}/`,
     }),
     createEvent: builder.mutation({
+      // Accepts FormData (for image file upload) or JSON object
       query: (eventData) => ({
         url: "/event/events/",
         method: "POST",

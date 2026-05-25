@@ -7,14 +7,14 @@ interface TicketVariation {
   id: number;
   name: string;
   fee: string;
-  image: string;
+  image: File | string;   // support file upload or URL
   date: string;
 }
 
 interface MainTicket {
   name: string;
   fee: string;
-  image: string;
+  image: File | string;
   date: string;
 }
 
@@ -28,8 +28,8 @@ function TicketForm({
   values,
   onChange,
 }: {
-  values: { name: string; fee: string; image: string; date: string };
-  onChange: (field: string, value: string) => void;
+  values: { name: string; fee: string; image: File | string; date: string };
+  onChange: (field: string, value: File | string) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -53,13 +53,57 @@ function TicketForm({
         </div>
       </div>
 
-      <input
-        type="text"
-        placeholder="Add ticket image"
-        value={values.image}
-        onChange={(e) => onChange("image", e.target.value)}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/25 focus:border-[#1E35C8] transition-all"
-      />
+      {/* Image Upload Field */}
+      <div>
+        <div className="text-xs text-gray-500 mb-1.5">Ticket Image (optional)</div>
+        <label className="flex items-center gap-2 cursor-pointer border border-gray-200 hover:border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-700 bg-white transition-all">
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                onChange("image", file);
+              }
+            }}
+          />
+          <span className="text-[#1E35C8] font-medium">Choose image</span>
+          <span className="text-gray-400">or drop file here</span>
+        </label>
+
+        {values.image && (
+          <div className="mt-2 flex items-center gap-3 text-sm">
+            {typeof values.image !== "string" ? (
+              <img
+                src={URL.createObjectURL(values.image)}
+                alt="preview"
+                className="w-12 h-12 rounded-lg object-cover border"
+              />
+            ) : values.image ? (
+              <img
+                src={values.image}
+                alt="preview"
+                className="w-12 h-12 rounded-lg object-cover border"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+              />
+            ) : null}
+
+            <div className="flex-1 min-w-0">
+              <div className="truncate text-gray-700">
+                {typeof values.image === "string" ? values.image : values.image.name}
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange("image", "")}
+                className="text-xs text-red-500 hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 bg-white">
         <CalendarDays size={14} className="text-gray-400 flex-shrink-0" />
@@ -85,10 +129,10 @@ export default function CreateEventTickets({
     { id: Date.now(), name: "", fee: "", image: "", date: "" },
   ]);
 
-  const updateMain = (field: string, value: string) =>
+  const updateMain = (field: string, value: File | string) =>
     setMain((m) => ({ ...m, [field]: value }));
 
-  const updateVariation = (id: number, field: string, value: string) =>
+  const updateVariation = (id: number, field: string, value: File | string) =>
     setVariations((v) => v.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
 
   const addVariation = () =>
