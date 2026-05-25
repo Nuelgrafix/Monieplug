@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
+import { useGetUserByIdQuery } from "@/redux/slices/apiSlice";
 import {
   User,
   Mail,
@@ -39,22 +42,7 @@ interface UserProfile {
   is_staff: boolean;
 }
 
-// ─── Mock — replace with your RTK Query hook ──────────────────────────────────
-// e.g: const { data: user, isLoading } = useGetUserQuery(userId);
-
-const MOCK_USER: UserProfile = {
-  id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  first_name: "Lateef",
-  last_name: "Adewale",
-  email: "lateef@monieplug.com",
-  phone: "+234 812 345 6789",
-  wallet_id: "WLT-00123",
-  wallet_account_number: "0123456789",
-  wallet_name: "Lateef Adewale",
-  wallet_bank_name: "Monieplug MFB",
-  is_active: true,
-  is_staff: false,
-};
+// Real data comes from useGetUserByIdQuery below (replaces previous mock)
 
 // ─── Subcomponents ────────────────────────────────────────────────────────────
 
@@ -247,18 +235,54 @@ function EditProfileModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 function ProfilePage() {
-  const [user, setUser] = useState<UserProfile>(MOCK_USER);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [showEdit, setShowEdit] = useState(false);
 
-  // Replace with: const { data: user, isLoading } = useGetUserQuery(userId);
-  // And: const [updateUser] = useUpdateUserMutation();
+  const authUser: any = useSelector((state: RootState) => state.auth.user);
+  const userId = authUser?.id;
 
-  const fullName = `${user.first_name} ${user.last_name}`;
+  const {
+    data: serverProfile,
+    isLoading,
+    isError,
+  } = useGetUserByIdQuery(userId ?? "", {
+    skip: !userId,
+  });
+
+  // Seed local state from server when available (enables editing on real data)
+  useEffect(() => {
+    if (serverProfile) {
+      setUser(serverProfile as UserProfile);
+    } else if (authUser) {
+      // Fallback using whatever partial data we have from login
+      setUser((prev) => prev ?? (authUser as UserProfile));
+    }
+  }, [serverProfile, authUser]);
 
   const handleSave = (data: Partial<UserProfile>) => {
-    setUser((prev) => ({ ...prev, ...data }));
-    // Call your mutation here: updateUser({ id: user.id, ...data })
+    setUser((prev) => (prev ? { ...prev, ...data } : (data as UserProfile)));
+    // TODO: wire update mutation when /authent/users/{id}/ PATCH or PUT is available
   };
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex-1 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-pulse text-sm text-gray-500">Loading profile…</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex-1 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-sm text-red-500">Failed to load profile. Please try again.</div>
+      </div>
+    );
+  }
+
+  // user is non-null here thanks to the guards above
+  const u = user as UserProfile;
+  const fullName = `${u.first_name} ${u.last_name}`;
 
   return (
     <div className="flex-1 min-h-screen bg-gray-50 overflow-y-auto">
@@ -275,12 +299,12 @@ function ProfilePage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold text-white">{fullName}</h1>
-                {user.is_active && (
+                {u.is_active && (
                   <BadgeCheck size={16} className="text-emerald-400 flex-shrink-0" />
                 )}
               </div>
-              <p className="text-sm text-white/60 mt-0.5">{user.email}</p>
-              {user.is_staff && (
+              <p className="text-sm text-white/60 mt-0.5">{u.email}</p>
+              {u.is_staff && (
                 <span className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-white text-[10px] font-semibold uppercase tracking-wider">
                   Staff
                 </span>
@@ -315,12 +339,12 @@ function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Account Number", value: user.wallet_account_number, mono: true, copy: true },
-              { label: "Bank", value: user.wallet_bank_name, mono: false, copy: false },
-              { label: "Account Name", value: user.wallet_name, mono: false, copy: false },
-              { label: "Wallet ID", value: user.wallet_id, mono: true, copy: true },
-            ].map(({ label, value, mono, copy }) => (
+              {[
+                { label: "Account Number", value: u.wallet_account_number, mono: true, copy: true },
+                { label: "Bank", value: u.wallet_bank_name, mono: false, copy: false },
+                { label: "Account Name", value: u.wallet_name, mono: false, copy: false },
+                { label: "Wallet ID", value: u.wallet_id, mono: true, copy: true },
+              ].map(({ label, value, mono, copy }) => (
               <div key={label} className="bg-gray-50 rounded-xl p-3">
                 <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-1">{label}</p>
                 <div className="flex items-center justify-between gap-1">
@@ -337,9 +361,9 @@ function ProfilePage() {
         {/* Personal Info */}
         <SectionCard title="Personal Information">
           <InfoRow icon={User} label="Full Name" value={fullName} />
-          <InfoRow icon={Mail} label="Email Address" value={user.email} copyable />
-          <InfoRow icon={Phone} label="Phone Number" value={user.phone} copyable />
-          <InfoRow icon={CreditCard} label="User ID" value={user.id} copyable mono />
+          <InfoRow icon={Mail} label="Email Address" value={u.email} copyable />
+          <InfoRow icon={Phone} label="Phone Number" value={u.phone} copyable />
+          <InfoRow icon={CreditCard} label="User ID" value={u.id} copyable mono />
         </SectionCard>
 
         {/* Account Status */}
@@ -352,16 +376,16 @@ function ProfilePage() {
               <div>
                 <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Account Status</p>
                 <p className="text-sm font-medium text-gray-800">
-                  {user.is_active ? "Active" : "Inactive"}
+                  {u.is_active ? "Active" : "Inactive"}
                 </p>
               </div>
             </div>
             <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-              user.is_active
+              u.is_active
                 ? "bg-emerald-50 text-emerald-600"
                 : "bg-red-50 text-red-500"
             }`}>
-              {user.is_active ? "Verified" : "Unverified"}
+              {u.is_active ? "Verified" : "Unverified"}
             </span>
           </div>
           <div className="flex items-center justify-between py-3.5">
@@ -372,12 +396,12 @@ function ProfilePage() {
               <div>
                 <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Role</p>
                 <p className="text-sm font-medium text-gray-800">
-                  {user.is_staff ? "Staff Member" : "Standard User"}
+                  {u.is_staff ? "Staff Member" : "Standard User"}
                 </p>
               </div>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#1E35C8]/10 text-[#1E35C8]">
-              {user.is_staff ? "Staff" : "User"}
+              {u.is_staff ? "Staff" : "User"}
             </span>
           </div>
         </SectionCard>
@@ -429,7 +453,7 @@ function ProfilePage() {
       {/* Edit Modal */}
       {showEdit && (
         <EditProfileModal
-          user={user}
+          user={u}
           onClose={() => setShowEdit(false)}
           onSave={handleSave}
         />

@@ -9,6 +9,7 @@ import {
   updateContactInfo,
   purchaseStart,
   purchaseSuccess,
+  purchaseFailure,
   resetTicketFlow,
 } from '@/redux/slices/ticketsSlice';
 import {
@@ -21,6 +22,7 @@ import {
   Minus,
   CheckCircle2,
 } from "lucide-react";
+import { useGetTicketByIdQuery, usePurchaseTicketMutation } from '@/redux/slices/apiSlice';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -375,7 +377,13 @@ export function CreateEventModal({ onClose }: { onClose?: () => void }) {
 // PURCHASE TICKET FLOW  (screens 4 → 5 → 6 → 7)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
+export function PurchaseTicketFlow({ 
+  onClose, 
+  event 
+}: { 
+  onClose: () => void; 
+  event?: any; // ApiEvent from the detail page with tickets
+}) {
   // Payment config
   const BANK_NAME = "FidelityMoniePlug";
   const ACCT_NUMBER = "9038340539";
@@ -387,7 +395,44 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
   const dispatch = useDispatch<AppDispatch>();
   const { selectedTicketIndex, quantity, contactInfo, purchaseLoading, purchaseSuccess } = useSelector((state: RootState) => state.tickets);
 
-  const ticket = TICKET_OPTIONS[selectedTicketIndex];
+  const [purchaseTicketMutation] = usePurchaseTicketMutation();
+
+  // Use real tickets from the event (integrated from /event/events/{id}/) or fallback
+  const realTickets = event?.tickets || [];
+  const hasRealTickets = realTickets.length > 0;
+  const eventId = event?.id;
+
+  const displayTickets = hasRealTickets
+    ? realTickets.map((t: any, idx: number) => ({
+        id: t.id,
+        label: t.name || `Ticket ${idx + 1}`,
+        price: parseFloat(t.price) || 0,
+        color: "bg-orange-100 text-orange-500",
+        ticket_image: t.ticket_image,
+        original: t,
+      }))
+    : TICKET_OPTIONS.map((t: any, i: number) => ({ 
+        ...t, 
+        id: i, 
+        label: t.label, 
+        price: t.price 
+      }));
+
+  // Currently selected ticket (real or fallback)
+  const currentDisplayTicket = displayTickets[selectedTicketIndex] || displayTickets[0];
+  const ticket = {
+    label: currentDisplayTicket?.label,
+    price: currentDisplayTicket?.price || 0,
+  };
+
+  // Real selected ticket object (for purchase payload)
+  const selectedRealTicket = hasRealTickets ? realTickets[selectedTicketIndex] : null;
+
+  // Integrate /event/tickets/{id}/ — fetch full details for the selected real ticket
+  const { data: ticketDetails } = useGetTicketByIdQuery(
+    selectedRealTicket?.id ?? 0,
+    { skip: !selectedRealTicket?.id }
+  );
   const emailsMatch = contactInfo.email && contactInfo.email === contactInfo.confirmEmail;
   const contactValid = contactInfo.fullName.trim() && emailsMatch;
 
@@ -395,6 +440,36 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
     navigator.clipboard.writeText(ACCT_NUMBER);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Real purchase submission using the event's ticket id
+  const handleRealPurchase = async () => {
+    dispatch(purchaseStart());
+
+    try {
+      const payload: any = {
+        ticket_id: selectedRealTicket?.id ?? currentDisplayTicket?.id,
+        quantity,
+        full_name: contactInfo.fullName,
+        email: contactInfo.email,
+      };
+
+      // Include event_id when we have real event data
+      if (eventId) {
+        payload.event_id = eventId;
+      }
+
+      await purchaseTicketMutation(payload).unwrap();
+
+      dispatch(purchaseSuccess());
+      setStep("success");
+    } catch (err: any) {
+      const message = err?.data?.detail || err?.data?.message || "Purchase failed. Please try again.";
+      // We can dispatch purchaseFailure if we want to show error in UI
+      console.error("Purchase error:", err);
+      alert(message); // temporary until we add better error UI
+      dispatch(purchaseFailure(message));
+    }
   };
 
   if (step === "success" || purchaseSuccess) {
@@ -449,23 +524,37 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           {step === "choose" && (
             <>
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Choose a ticket</h2>
-              <div className="flex gap-3 flex-wrap">
-                {TICKET_OPTIONS.map((t, i) => (
-                  <button
-                    key={t.label}
-                    onClick={() => dispatch(selectTicket(i))}
-                    className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all w-28 ${
-                      selectedTicketIndex === i ? "border-orange-400 shadow-sm" : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${t.color}`}>
-                      <Ticket size={18} />
-                    </div>
-                    <span className="text-xs text-gray-500 mb-0.5">{t.label}</span>
-                    <span className="text-sm font-bold text-gray-900">{fmt(t.price)}</span>
-                  </button>
-                ))}
-              </div>
+               {hasRealTickets && displayTickets.length === 0 ? (
+                <div className="text-sm text-gray-500 py-4">
+                  No tickets available for this event yet.
+                </div>
+              ) : (
+                <div className="flex gap-3 flex-wrap">
+                  {displayTickets.map((t: any, i: number) => (
+                    <button
+                      key={t.id ?? i}
+                      onClick={() => dispatch(selectTicket(i))}
+                      className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all w-28 overflow-hidden ${
+                        selectedTicketIndex === i ? "border-orange-400 shadow-sm" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      {hasRealTickets && t.ticket_image ? (
+                        <img 
+                          src={t.ticket_image} 
+                          alt={t.label}
+                          className="w-10 h-10 rounded-xl object-cover mb-2" 
+                        />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${t.color}`}>
+                          <Ticket size={18} />
+                        </div>
+                      )}
+                      <span className="text-xs text-gray-500 mb-0.5">{t.label}</span>
+                      <span className="text-sm font-bold text-gray-900">{fmt(t.price)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
@@ -601,19 +690,14 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           isCheckout={step !== "choose" && step !== "contact"}
           fee={step === "checkout" ? ticket.price * quantity : undefined}
           charges={step === "checkout" ? CHARGES : undefined}
-          onAction={() => {
+          onAction={async () => {
             if (step === "choose") setStep("contact");
             else if (step === "contact" && contactValid) setStep("checkout");
             else if (step === "checkout" && method) {
               setStep(method as "transfer" | "card");
             }
-            else if (step === "transfer") {
-              dispatch(purchaseStart());
-              setTimeout(() => setStep("success"), 2000);
-            }
-            else if (step === "card") {
-              dispatch(purchaseStart());
-              setTimeout(() => setStep("success"), 2000);
+            else if (step === "transfer" || step === "card") {
+              await handleRealPurchase();
             }
           }}
           actionDisabled={(step === "contact" && !contactValid) || (step === "checkout" && !method) || purchaseLoading}

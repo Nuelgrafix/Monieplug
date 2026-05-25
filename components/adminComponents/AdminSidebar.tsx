@@ -48,7 +48,7 @@ export function Sidebar({ handleLogout }: { handleLogout: () => void }) {
 
       {/* Create Event CTA */}
       <Link
-        href="/events/create"
+        href="/dashboard/events/create"
         className="mb-6 bg-[#FF6B00] hover:bg-[#e05f00] active:scale-95 transition-all duration-150 text-white text-sm font-semibold rounded-lg py-2.5 px-4 text-center shadow-md"
       >
         Create event
