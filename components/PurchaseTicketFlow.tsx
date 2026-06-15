@@ -17,11 +17,11 @@ import {
   ArrowLeft,
   Camera,
   CalendarDays,
-  Ticket,
   Plus,
   Minus,
   CheckCircle2,
 } from "lucide-react";
+import { Ticket as TicketIcon } from "lucide-react";
 import { useGetTicketByIdQuery, usePurchaseTicketMutation } from '@/redux/slices/apiSlice';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +37,10 @@ interface TicketVariation {
   image: string;
   date: string;
 }
+
+type TicketOption = { id: number; name: string; price: string; ticket_image?: string };
+type Organizer = { bank_name?: string; account_number?: string; account_name?: string; full_name?: string; email?: string; phone?: string };
+type EventData = { id: number; title: string; organizer?: Organizer; tickets?: TicketOption[] };
 
 const TICKET_OPTIONS = [
   { label: "Regular", price: 13000, color: "bg-orange-100 text-orange-500" },
@@ -275,7 +279,7 @@ export function CreateEventModal({ onClose }: { onClose?: () => void }) {
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30"
                     />
                     <div className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm w-32">
-                      <Ticket size={14} className="text-gray-400" />
+                      <TicketIcon size={14} className="text-gray-400" />
                       <input
                         placeholder="Ticket fee"
                         value={mainTicket.fee}
@@ -322,7 +326,7 @@ export function CreateEventModal({ onClose }: { onClose?: () => void }) {
                         className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30"
                       />
                       <div className="flex items-center gap-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm w-32">
-                        <Ticket size={14} className="text-gray-400" />
+                        <TicketIcon size={14} className="text-gray-400" />
                         <input
                           placeholder="Ticket fee"
                           value={v.fee}
@@ -377,17 +381,20 @@ export function CreateEventModal({ onClose }: { onClose?: () => void }) {
 // PURCHASE TICKET FLOW  (screens 4 → 5 → 6 → 7)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+type Event = { id: number; title: string; organizer?: { bank_name?: string; account_number?: string; account_name?: string }; tickets?: Ticket[] };
+type Ticket = { id: number; name: string; price: string; ticket_image?: string };
+
 export function PurchaseTicketFlow({ 
   onClose, 
   event 
 }: { 
   onClose: () => void; 
-  event?: any; // ApiEvent from the detail page with tickets
+  event?: EventData;
 }) {
-  // Payment config
-  const BANK_NAME = "FidelityMoniePlug";
-  const ACCT_NUMBER = "9038340539";
-  const ACCT_NAME = "Emmanuel N.";
+  const organizerBank = event?.organizer;
+  const BANK_NAME = organizerBank?.bank_name || "";
+  const ACCT_NUMBER = organizerBank?.account_number || "";
+  const ACCT_NAME = organizerBank?.account_name || organizerBank?.full_name || "";
 
   const [step, setStep] = useState<BuyStep>("choose");
   const [method, setMethod] = useState<Method>(null);
@@ -461,7 +468,7 @@ export function PurchaseTicketFlow({
 
       await purchaseTicketMutation(payload).unwrap();
 
-      dispatch(purchaseSuccess());
+      // dispatch(purchaseSuccess());
       setStep("success");
     } catch (err: any) {
       const message = err?.data?.detail || err?.data?.message || "Purchase failed. Please try again.";
@@ -546,7 +553,7 @@ export function PurchaseTicketFlow({
                         />
                       ) : (
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${t.color}`}>
-                          <Ticket size={18} />
+                          <TicketIcon size={18} />
                         </div>
                       )}
                       <span className="text-xs text-gray-500 mb-0.5">{t.label}</span>
@@ -642,27 +649,48 @@ export function PurchaseTicketFlow({
           {step === "transfer" && (
             <>
               <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Transfer</h2>
-              <p className="text-sm text-gray-500 mb-4">Make payment through bank transfer to</p>
+              <p className="text-sm text-gray-500 mb-4">
+                {ACCT_NUMBER
+                  ? "Make payment to the event organizer's account below:"
+                  : "Bank transfer details unavailable. Please contact the event organizer for payment details."}
+              </p>
 
-              <div className="border border-gray-200 rounded-xl px-6 py-5 inline-block min-w-[220px]">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-3xl font-bold text-[#2338e0] tracking-wide">{ACCT_NUMBER}</span>
-                  <button onClick={copy} title="Copy account number" className="text-gray-400 hover:text-gray-700 transition-colors">
-                    {copied ? (
-                      <CheckCircle2 size={20} />
-                    ) : (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth={1.8}>
-                        <rect x="9" y="9" width="13" height="13" rx="2" />
-                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                      </svg>
+              {ACCT_NUMBER ? (
+                <div className="border border-gray-200 rounded-xl px-6 py-5 inline-block min-w-[260px]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-2xl sm:text-3xl font-bold text-[#2338e0] tracking-wide">{ACCT_NUMBER}</span>
+                    <button onClick={copy} title="Copy account number" className="text-gray-400 hover:text-gray-700 transition-colors">
+                      {copied ? (
+                        <CheckCircle2 size={20} />
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth={1.8}>
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1 text-sm">
+                    {BANK_NAME && (
+                      <div className="flex justify-between text-gray-600">
+                        <span className="font-medium">Bank:</span>
+                        <span className="text-[#2338e0] font-semibold">{BANK_NAME}</span>
+                      </div>
                     )}
-                  </button>
+                    {ACCT_NAME && (
+                      <div className="flex justify-between text-gray-600">
+                        <span className="font-medium">Account Name:</span>
+                        <span className="font-semibold">{ACCT_NAME}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span className="text-[#2338e0] font-medium">{BANK_NAME}</span>
-                  <span>{ACCT_NAME}</span>
+              ) : (
+                <div className="border border-orange-200 bg-orange-50 rounded-xl px-6 py-5 text-sm text-orange-700">
+                  <p className="font-medium mb-1">No bank details available</p>
+                  <p className="text-xs text-orange-600">The event organizer has not provided bank transfer details yet. Please reach out to them directly or try another payment method.</p>
                 </div>
-              </div>
+              )}
             </>
           )}
 

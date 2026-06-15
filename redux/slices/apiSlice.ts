@@ -39,7 +39,7 @@ export const apiSlice = createApi({
       query: (pin) => ({
         url: "/authent/set-pin/",
         method: "POST",
-        body: { pin },
+        body: pin,
       }),
     }),
     transferFunds: builder.mutation({
@@ -87,6 +87,13 @@ export const apiSlice = createApi({
     getBalance: builder.mutation({
       query: (data) => ({
         url: "/authent/get-balance/",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    getTransactionHistory: builder.mutation({
+      query: (data) => ({
+        url: "/authent/transaction-history/",
         method: "POST",
         body: data,
       }),
@@ -233,6 +240,7 @@ export const {
   useForgotPasswordMutation,
   useSendOtpMutation,
   useGetBalanceMutation,
+  useGetTransactionHistoryMutation,
   useGetEventsQuery,
   useGetEventByIdQuery,
   useCreateEventMutation,

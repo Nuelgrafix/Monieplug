@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useRef } from "react";
 
 // ─── Swap this for your actual video file in /public ───
-const VIDEO_SRC = null;
+const VIDEO_SRC = "";
 // ─── Swap this for your video thumbnail in /public ───
 const POSTER_SRC = "/poster.png";
 
@@ -48,18 +48,24 @@ export default function VideoSection() {
 
       {/* ── Video container ── */}
       <div className="relative w-full max-w-2xl rounded-2xl overflow-hidden cursor-pointer group">
-        <video
-          ref={videoRef}
-          src={""}
-          poster={POSTER_SRC}
-          className="w-full h-auto block"
-          onEnded={() => setPlaying(false)}
-          onClick={handleVideoClick}
-          playsInline
-        />
+        {VIDEO_SRC ? (
+          <video
+            ref={videoRef}
+            src={VIDEO_SRC}
+            poster={POSTER_SRC}
+            className="w-full h-auto block"
+            onEnded={() => setPlaying(false)}
+            onClick={handleVideoClick}
+            playsInline
+          />
+        ) : (
+          <div className="w-full h-auto block bg-gray-200 flex items-center justify-center">
+            <span className="text-gray-500">Video placeholder</span>
+          </div>
+        )}
 
         {/* Play button overlay — hidden while playing */}
-        {!playing && (
+        {!playing && VIDEO_SRC && (
           <button
             onClick={handlePlay}
             aria-label="Play video"
