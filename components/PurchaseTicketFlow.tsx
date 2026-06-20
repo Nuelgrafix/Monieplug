@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
+import toast from "react-hot-toast";
 import {
   selectTicket,
   setQuantity,
@@ -20,15 +22,19 @@ import {
   Plus,
   Minus,
   CheckCircle2,
+  Lock,
+  ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Ticket as TicketIcon } from "lucide-react";
-import { useGetTicketByIdQuery, usePurchaseTicketMutation } from '@/redux/slices/apiSlice';
+import { useGetTicketByIdQuery, useEwalletCheckoutMutation, useCheckTransactionPinQuery, useSetPinMutation } from '@/redux/slices/apiSlice';
+import Modal from '@/components/Modal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CreateStep = "describe" | "tickets";
-type BuyStep = "choose" | "contact" | "checkout" | "transfer" | "card" | "success";
-type Method = "card" | "transfer" | null;
+type BuyStep = "choose" | "contact" | "checkout" | "success";
 
 interface TicketVariation {
   id: number;
@@ -49,6 +55,93 @@ const TICKET_OPTIONS = [
 ];
 
 const CHARGES = 250;
+
+// ─── Modern PIN Input ────────────────────────────────────────────────────────
+
+function PinDots({ length, error }: { length: number; error?: boolean }) {
+  return (
+    <div className="flex items-center justify-center gap-3">
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ease-out ${
+            i < length
+              ? error
+                ? "bg-red-500 scale-110"
+                : "bg-[#1E35C8] scale-110 shadow-[0_0_12px_rgba(30,53,200,0.4)]"
+              : error
+                ? "bg-red-200"
+                : "bg-gray-200"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SegmentedPinInput({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  error?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-5">
+      <div
+        className="flex items-center gap-3 cursor-pointer select-none"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {[0, 1, 2, 3].map((i) => {
+          const filled = i < value.length;
+          const isCurrent = i === value.length;
+          return (
+            <div
+              key={i}
+              className={`w-14 h-16 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 ease-out ${
+                error && filled
+                  ? "border-red-400 bg-red-50"
+                  : filled
+                    ? "border-[#1E35C8] bg-[#1E35C8]/5 shadow-[0_2px_16px_rgba(30,53,200,0.15)]"
+                    : isCurrent
+                      ? "border-[#1E35C8]/50 bg-white"
+                      : "border-gray-200 bg-white"
+              }`}
+            >
+              {filled ? (
+                <div
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ease-out ${
+                    error ? "bg-red-500" : "bg-[#1E35C8]"
+                  }`}
+                  style={{ animation: "pinPop 0.25s ease-out" }}
+                />
+              ) : isCurrent ? (
+                <div className="w-0.5 h-5 bg-[#1E35C8] rounded-full animate-pulse" />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      <input
+        ref={inputRef}
+        type="tel"
+        inputMode="numeric"
+        maxLength={4}
+        value={value}
+        onChange={(e) => {
+          const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+          onChange(val);
+        }}
+        className="absolute opacity-0 w-0 h-0 pointer-events-none"
+        autoFocus
+      />
+    </div>
+  );
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -381,28 +474,39 @@ export function CreateEventModal({ onClose }: { onClose?: () => void }) {
 // PURCHASE TICKET FLOW  (screens 4 → 5 → 6 → 7)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type Event = { id: number; title: string; organizer?: { bank_name?: string; account_number?: string; account_name?: string }; tickets?: Ticket[] };
-type Ticket = { id: number; name: string; price: string; ticket_image?: string };
-
 export function PurchaseTicketFlow({ 
-  onClose, 
-  event 
-}: { 
-  onClose: () => void; 
+  onClose,
+  event
+}: {
+  onClose: () => void;
   event?: EventData;
 }) {
-  const organizerBank = event?.organizer;
-  const BANK_NAME = organizerBank?.bank_name || "";
-  const ACCT_NUMBER = organizerBank?.account_number || "";
-  const ACCT_NAME = organizerBank?.account_name || organizerBank?.full_name || "";
-
   const [step, setStep] = useState<BuyStep>("choose");
-  const [method, setMethod] = useState<Method>(null);
-  const [copied, setCopied] = useState(false);
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { selectedTicketIndex, quantity, contactInfo, purchaseLoading, purchaseSuccess } = useSelector((state: RootState) => state.tickets);
 
-  const [purchaseTicketMutation] = usePurchaseTicketMutation();
+  const [ewalletCheckoutMutation] = useEwalletCheckoutMutation();
+  const [setPinMutation] = useSetPinMutation();
+  const [newPin, setNewPin] = useState("");
+  const [confirmNewPin, setConfirmNewPin] = useState("");
+  const [settingPin, setSettingPin] = useState(false);
+  const [showIncorrectPinModal, setShowIncorrectPinModal] = useState(false);
+
+  const { data: pinCheckData, isLoading: pinCheckLoading, isSuccess: pinCheckSuccess, isError: pinCheckError } = useCheckTransactionPinQuery(undefined, {
+    skip: step !== "checkout",
+  });
+  const [pinSetLocally, setPinSetLocally] = useState(false);
+
+  const serverSaysNoPin = pinCheckError || pinCheckData?.pin_set === false;
+  const serverSaysHasPin = pinSetLocally || pinCheckData?.pin_set === true || pinCheckSuccess === true;
+  const hasPin = serverSaysHasPin && !serverSaysNoPin;
+
+  useEffect(() => {
+    if (pinCheckData?.pin_set === true) {
+      setPinSetLocally(false);
+    }
+  }, [pinCheckData?.pin_set]);
 
   // Use real tickets from the event (integrated from /event/events/{id}/) or fallback
   const realTickets = event?.tickets || [];
@@ -442,11 +546,22 @@ export function PurchaseTicketFlow({
   );
   const emailsMatch = contactInfo.email && contactInfo.email === contactInfo.confirmEmail;
   const contactValid = contactInfo.fullName.trim() && emailsMatch;
+  const pinValid = contactInfo.transactionPin.length >= 4;
 
-  const copy = () => {
-    navigator.clipboard.writeText(ACCT_NUMBER);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleSetPin = async () => {
+    if (newPin.length < 4 || newPin !== confirmNewPin) return;
+    setSettingPin(true);
+    try {
+      await setPinMutation({ pin: newPin }).unwrap();
+      setNewPin("");
+      setConfirmNewPin("");
+      setPinSetLocally(true);
+    } catch (err: any) {
+      const message = err?.data?.detail || err?.data?.message || "Failed to set PIN.";
+      toast.error(message);
+    } finally {
+      setSettingPin(false);
+    }
   };
 
   // Real purchase submission using the event's ticket id
@@ -454,27 +569,54 @@ export function PurchaseTicketFlow({
     dispatch(purchaseStart());
 
     try {
-      const payload: any = {
+      const payload = {
         ticket_id: selectedRealTicket?.id ?? currentDisplayTicket?.id,
-        quantity,
+        copies: quantity,
         full_name: contactInfo.fullName,
         email: contactInfo.email,
+        transaction_pin: contactInfo.transactionPin,
       };
 
-      // Include event_id when we have real event data
-      if (eventId) {
-        payload.event_id = eventId;
-      }
+      await ewalletCheckoutMutation(payload).unwrap();
 
-      await purchaseTicketMutation(payload).unwrap();
-
-      // dispatch(purchaseSuccess());
       setStep("success");
     } catch (err: any) {
-      const message = err?.data?.detail || err?.data?.message || "Purchase failed. Please try again.";
-      // We can dispatch purchaseFailure if we want to show error in UI
-      console.error("Purchase error:", err);
-      alert(message); // temporary until we add better error UI
+      console.error("Ewallet checkout error:", err);
+
+      const message =
+        err?.data?.details?.message ||
+        err?.data?.detail ||
+        err?.data?.message ||
+        err?.data?.error ||
+        "Checkout failed. Please try again.";
+
+      const pinNotSet =
+        message.toLowerCase().includes("not set") ||
+        message.toLowerCase().includes("no pin") ||
+        message.toLowerCase().includes("pin is required") ||
+        message.toLowerCase().includes("set your pin") ||
+        message.toLowerCase().includes("create a pin");
+
+      const pinIncorrect =
+        message.toLowerCase().includes("incorrect") ||
+        message.toLowerCase().includes("invalid pin") ||
+        message.toLowerCase().includes("wrong pin") ||
+        message.toLowerCase().includes("pin mismatch") ||
+        message.toLowerCase().includes("does not match");
+
+      if (pinNotSet) {
+        dispatch(purchaseFailure(message));
+        router.push("/dashboard/set-pin");
+        return;
+      }
+
+      if (pinIncorrect) {
+        setShowIncorrectPinModal(true);
+        dispatch(purchaseFailure(message));
+        return;
+      }
+
+      toast.error(message);
       dispatch(purchaseFailure(message));
     }
   };
@@ -506,14 +648,14 @@ export function PurchaseTicketFlow({
   }
 
   return (
+    <>
     <div className="flex-1 bg-[#F5F5F5] min-h-screen p-6 overflow-y-auto">
       {/* Go back */}
       <button
         onClick={() => {
           if (step === "choose") onClose();
           else if (step === "contact") setStep("choose");
-          else if (step === "checkout") setStep("contact");
-          else if (step === "transfer" || step === "card") setStep("checkout");
+          else if (step === "checkout") { setStep("contact"); }
         }}
         className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 mb-4"
       >
@@ -613,105 +755,74 @@ export function PurchaseTicketFlow({
           {/* STEP: Checkout / Payment */}
           {step === "checkout" && (
             <>
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">Payment method</h2>
-              <div className="flex gap-3 flex-wrap">
-                {(["card", "transfer"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMethod(m)}
-                    className={`flex items-center gap-2 border rounded-lg px-4 py-2.5 text-sm transition-all ${
-                      method === m
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-300 text-gray-600 hover:border-gray-400"
-                    }`}
-                  >
-                    {m === "card" ? (
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={1.8}>
-                        <rect x="2" y="5" width="20" height="14" rx="2" />
-                        <path d="M2 10h20" strokeLinecap="round" />
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
-                    )}
-                    {m === "card" ? "Pay with Bank card" : "Transfer"}
-                    <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors ${
-                      method === m ? "border-blue-500 bg-blue-500" : "border-gray-300"
-                    }`} />
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* STEP: Bank Transfer */}
-          {step === "transfer" && (
-            <>
-              <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Transfer</h2>
-              <p className="text-sm text-gray-500 mb-4">
-                {ACCT_NUMBER
-                  ? "Make payment to the event organizer's account below:"
-                  : "Bank transfer details unavailable. Please contact the event organizer for payment details."}
-              </p>
-
-              {ACCT_NUMBER ? (
-                <div className="border border-gray-200 rounded-xl px-6 py-5 inline-block min-w-[260px]">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl sm:text-3xl font-bold text-[#2338e0] tracking-wide">{ACCT_NUMBER}</span>
-                    <button onClick={copy} title="Copy account number" className="text-gray-400 hover:text-gray-700 transition-colors">
-                      {copied ? (
-                        <CheckCircle2 size={20} />
-                      ) : (
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth={1.8}>
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                        </svg>
-                      )}
-                    </button>
+              {pinCheckLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <div className="w-8 h-8 border-2 border-[#1E35C8] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-gray-400">Checking your account…</p>
+                </div>
+              ) : hasPin ? (
+                <div className="flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-[#1E35C8]/10 flex items-center justify-center mb-4">
+                    <Lock size={24} className="text-[#1E35C8]" />
                   </div>
-                  <div className="flex flex-col gap-1 text-sm">
-                    {BANK_NAME && (
-                      <div className="flex justify-between text-gray-600">
-                        <span className="font-medium">Bank:</span>
-                        <span className="text-[#2338e0] font-semibold">{BANK_NAME}</span>
-                      </div>
-                    )}
-                    {ACCT_NAME && (
-                      <div className="flex justify-between text-gray-600">
-                        <span className="font-medium">Account Name:</span>
-                        <span className="font-semibold">{ACCT_NAME}</span>
-                      </div>
-                    )}
+                  <h2 className="text-base font-bold text-gray-900 mb-1">Enter your PIN</h2>
+                  <p className="text-sm text-gray-400 mb-8 text-center max-w-[260px]">
+                    Enter your 4-digit transaction PIN to pay from your wallet
+                  </p>
+
+                  <SegmentedPinInput
+                    value={contactInfo.transactionPin}
+                    onChange={(val) => dispatch(updateContactInfo({ transactionPin: val }))}
+                  />
+
+                  <div className="mt-6">
+                    <PinDots length={contactInfo.transactionPin.length} />
                   </div>
                 </div>
               ) : (
-                <div className="border border-orange-200 bg-orange-50 rounded-xl px-6 py-5 text-sm text-orange-700">
-                  <p className="font-medium mb-1">No bank details available</p>
-                  <p className="text-xs text-orange-600">The event organizer has not provided bank transfer details yet. Please reach out to them directly or try another payment method.</p>
+                <div className="flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-4">
+                    <ShieldCheck size={24} className="text-amber-500" />
+                  </div>
+                  <h2 className="text-base font-bold text-gray-900 mb-1">Create your PIN</h2>
+                  <p className="text-sm text-gray-400 mb-8 text-center max-w-[280px]">
+                    Set a 4-digit transaction PIN to secure your wallet payments
+                  </p>
+
+                  <SegmentedPinInput
+                    value={newPin}
+                    onChange={setNewPin}
+                    error={confirmNewPin.length > 0 && confirmNewPin !== newPin}
+                  />
+
+                  {newPin.length === 4 && (
+                    <>
+                      <p className="text-xs text-gray-400 mt-6 mb-4">Re-enter your PIN to confirm</p>
+                      <SegmentedPinInput
+                        value={confirmNewPin}
+                        onChange={setConfirmNewPin}
+                        error={confirmNewPin.length > 0 && confirmNewPin !== newPin}
+                      />
+                    </>
+                  )}
+
+                  {confirmNewPin.length > 0 && confirmNewPin !== newPin && (
+                    <p className="text-xs text-red-500 mt-4 flex items-center gap-1">
+                      <X size={12} /> PINs do not match
+                    </p>
+                  )}
+                  {newPin.length === 4 && confirmNewPin === newPin && (
+                    <p className="text-xs text-green-600 mt-4 flex items-center gap-1">
+                      <CheckCircle2 size={12} /> PINs match
+                    </p>
+                  )}
                 </div>
               )}
             </>
           )}
-
-          {/* STEP: Bank Card */}
-          {step === "card" && (
-            <>
-              <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Card</h2>
-              <p className="text-sm text-gray-500 mb-4">Add your bank card to make payment</p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input placeholder="Bank name" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <input placeholder="Card number" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" inputMode="numeric" maxLength={19} />
-                <input placeholder="Expiry date: MM/YY" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <input placeholder="CVV" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" maxLength={4} type="password" />
-                <input placeholder="Card pin" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 sm:col-span-1" maxLength={4} type="password" />
-              </div>
-            </>
-          )}
         </div>
 
-        {/* ── Order Summary ── */}
+         {/* ── Order Summary ── */}
         <OrderSummary
           ticketPrice={step === "checkout" ? undefined : ticket.price}
           qty={quantity}
@@ -720,19 +831,71 @@ export function PurchaseTicketFlow({
           charges={step === "checkout" ? CHARGES : undefined}
           onAction={async () => {
             if (step === "choose") setStep("contact");
-            else if (step === "contact" && contactValid) setStep("checkout");
-            else if (step === "checkout" && method) {
-              setStep(method as "transfer" | "card");
-            }
-            else if (step === "transfer" || step === "card") {
-              await handleRealPurchase();
+            else if (step === "contact" && contactValid) { setStep("checkout"); }
+            else if (step === "checkout") {
+              if (hasPin && pinValid) {
+                await handleRealPurchase();
+              } else if (!hasPin && newPin.length >= 4 && newPin === confirmNewPin) {
+                await handleSetPin();
+              }
             }
           }}
-          actionDisabled={(step === "contact" && !contactValid) || (step === "checkout" && !method) || purchaseLoading}
-          actionLabel={purchaseLoading ? "Processing..." : step === "transfer" ? "I have paid" : step === "card" ? "Checkout" : step === "checkout" ? "Continue" : "Continue"}
+          actionDisabled={
+            (step === "contact" && !contactValid) ||
+            (step === "checkout" && (
+              pinCheckLoading ||
+              (hasPin && !pinValid) ||
+              (!hasPin && (newPin.length < 4 || newPin !== confirmNewPin))
+            )) ||
+            purchaseLoading ||
+            settingPin
+          }
+          actionLabel={
+            purchaseLoading ? "Processing..." :
+            settingPin ? "Setting PIN..." :
+            step === "checkout" && !hasPin ? "Set PIN" :
+            step === "checkout" ? "Pay from Wallet" :
+            "Continue"
+          }
         />
       </div>
     </div>
+
+    <Modal
+      isOpen={showIncorrectPinModal}
+      onClose={() => setShowIncorrectPinModal(false)}
+      title="Incorrect PIN"
+    >
+      <div className="flex flex-col items-center gap-5">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+          <X size={24} className="text-red-500" />
+        </div>
+        <p className="text-sm text-gray-600 text-center">
+          The transaction PIN you entered is incorrect. What would you like to do?
+        </p>
+        <div className="flex gap-3 w-full">
+          <button
+            onClick={() => {
+              setShowIncorrectPinModal(false);
+              dispatch(updateContactInfo({ transactionPin: "" }));
+            }}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold border-2 border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => {
+              setShowIncorrectPinModal(false);
+              router.push("/dashboard/set-pin");
+            }}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold bg-[#1E35C8] text-white hover:bg-[#1a2eb0] transition-all"
+          >
+            Create New PIN
+          </button>
+        </div>
+      </div>
+    </Modal>
+    </>
   );
 }
 

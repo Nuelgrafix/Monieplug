@@ -42,6 +42,9 @@ export const apiSlice = createApi({
         body: pin,
       }),
     }),
+    checkTransactionPin: builder.query({
+      query: () => "/authent/check-transaction-pin/",
+    }),
     transferFunds: builder.mutation({
       query: (data) => ({
         url: "/authent/transfer-funds/",
@@ -179,6 +182,13 @@ export const apiSlice = createApi({
         body: ticketData,
       }),
     }),
+    ewalletCheckout: builder.mutation({
+      query: (data) => ({
+        url: "/event/ewallet/checkout/",
+        method: "POST",
+        body: data,
+      }),
+    }),
     getUserTickets: builder.query({
       query: () => "/tickets/my-tickets/",
     }),
@@ -233,6 +243,7 @@ export const {
   useSignupMutation,
   useResetPasswordMutation,
   useSetPinMutation,
+  useCheckTransactionPinQuery,
   useTransferFundsMutation,
   useVerifyAccountMutation,
   useVerifyEmailMutation,
@@ -254,6 +265,7 @@ export const {
   usePatchTicketMutation,
   useDeleteTicketMutation,
   usePurchaseTicketMutation,
+  useEwalletCheckoutMutation,
   useGetUserTicketsQuery,
   useGetUserByIdQuery,
   useGetBanksQuery,
