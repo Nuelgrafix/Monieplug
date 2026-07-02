@@ -59,6 +59,13 @@ export const apiSlice = createApi({
         body: data,
       }),
     }),
+    otherBankEnquiry: builder.mutation({
+      query: (data) => ({
+        url: "/authent/other-bank-enquiry/",
+        method: "POST",
+        body: { customer: data },
+      }),
+    }),
     verifyEmail: builder.mutation({
       query: (data) => ({
         url: "/authent/verify-email/",
@@ -246,6 +253,7 @@ export const {
   useCheckTransactionPinQuery,
   useTransferFundsMutation,
   useVerifyAccountMutation,
+  useOtherBankEnquiryMutation,
   useVerifyEmailMutation,
   usePaymentWebhookMutation,
   useForgotPasswordMutation,

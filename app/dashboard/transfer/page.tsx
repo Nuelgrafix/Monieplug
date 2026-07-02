@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft, CheckCircle2, ChevronDown, Eye, EyeOff, Search, X } from "lucide-react";
-import React, { useMemo, useEffect, useRef, useState } from "react";
+import { ArrowLeft, CheckCircle2, ChevronDown, Search, X } from "lucide-react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
@@ -10,7 +10,7 @@ import {
   useGetBanksQuery,
   useTransferFundsMutation,
   useSetPinMutation,
-  useVerifyAccountMutation,
+  useOtherBankEnquiryMutation,
 } from "@/redux/slices/apiSlice";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -23,60 +23,20 @@ function Backdrop({ children }: { children: React.ReactNode }) {
   );
 }
 
-// PIN entry that auto-advances (copied from signup pattern)
-function PinDigit({
-  value,
-  onChange,
-  show,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  show: boolean;
-}) {
-  const [display, setDisplay] = useState(value);
-  const ref = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setDisplay(value);
-  }, [value]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const ch = e.target.value.replace(/\D/, "").slice(-1);
-    setDisplay(ch);
-    onChange(ch);
-    if (ch && ref.current) ref.current.blur(); // close soft keyboard
-  };
-
-  return (
-    <input
-      ref={ref}
-      type={show ? "text" : "password"}
-      inputMode="numeric"
-      maxLength={1}
-      value={display}
-      onChange={handleChange}
-      className="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E35C8]"
-    />
-  );
-}
-
-// ─── Flow Modal types ─────────────────────────────────────────────────────────
-
-type ModalKind = null | "confirm" | "password" | "create-pin";
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
+type ModalKind = null | "confirm" | "password";
 
 export default function SendMoneyFlow() {
   const router = useRouter();
   const currentUser: any = useSelector((state: RootState) => state.auth.user);
-  const [revealCreatePin, setRevealCreatePin] = useState(false);
 
   // ── RTK hooks ──────────────────────────────────────────────────────────────
   const { data: banksData, error: banksError, isLoading: banksLoading } = useGetBanksQuery(undefined);
 
   const [transferFunds, { isLoading: transferLoading }] = useTransferFundsMutation();
   const [setPin, { isLoading: pinLoading }] = useSetPinMutation();
-  const [verifyAccount, { isLoading: verifyingAccount }] = useVerifyAccountMutation();
+  const [otherBankEnquiry, { isLoading: verifyingAccount }] = useOtherBankEnquiryMutation();
 
   // ── Parse banks from various response shapes ───────────────────────────────
 const banks: string[] = useMemo(() => {
@@ -121,14 +81,14 @@ useEffect(() => {
   // ── Amount ──────────────────────────────────────────────────────────────────
   const [amount, setAmount] = useState("");
 
-  // ── PIN ─────────────────────────────────────────────────────────────────
-  const [pinValues, setPinValues] = useState<string[]>(["", "", "", ""]);
-  const [showPin, setShowPin] = useState(false);
+// ── PIN ─────────────────────────────────────────────────────────────────
+   const [pinValues, setPinValues] = useState<string[]>(["", "", "", ""]);
+   const [showPin, setShowPin] = useState(false);
 
-  // ── PIN creation (for users without a PIN) ──────────────────────────────────
-  const [createPin, setCreatePin] = useState("");
-  const [createPinValues, setCreatePinValues] = useState<string[]>(["", "", "", ""]);
-  const [showCreatePin, setShowCreatePin] = useState(false);
+// ── PIN creation (for users without a PIN) ──────────────────────────────────
+   const [createPinValues, setCreatePinValues] = useState<string[]>(["", "", "", ""]);
+   const [showCreatePinModal, setShowCreatePinModal] = useState(false);
+   const [showPinInput, setShowPinInput] = useState(false);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const isAcctComplete = accountNumber.length === 10;
@@ -177,19 +137,14 @@ useEffect(() => {
       try {
         const code = selectedBank && bankCodeMap[selectedBank]
           ? bankCodeMap[selectedBank]
-          : selectedBank; // fall back to raw name if no code map yet
-        const result = await verifyAccount({
-          account_number: accountNumber,
-          bank: code,
+          : selectedBank;
+        const result = await otherBankEnquiry({
+          accountNumber: accountNumber,
+          bankCode: code,
         }).unwrap();
         if (!cancelled && result) {
-          const name =
-            result.account_name ||
-            result.name ||
-            result.fullName ||
-            result.accountName ||
-            "Unknown Account";
-          setAccountName(name);
+          const name = result.data?.customer?.account?.name;
+          setAccountName(name || "Unknown Account");
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -199,7 +154,7 @@ useEffect(() => {
       }
     })();
     return () => { cancelled = true; };
-  }, [isAcctComplete, isBankComplete, accountNumber, selectedBank, bankCodeMap, verifyAccount]);
+  }, [isAcctComplete, isBankComplete, accountNumber, selectedBank, bankCodeMap, otherBankEnquiry]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAccountNext = () => {
@@ -215,15 +170,10 @@ useEffect(() => {
   const handleConfirm = () => {
     if (currentUser?.has_pin === false) {
       setModal(null);
-      setShowCreatePin(true);
+      setShowCreatePinModal(true);
     } else {
       setModal("password");
     }
-  };
-
-  const handlePasswordSend = () => {
-    // handler used to close the modal, now unused — transferred to handleTransfer
-    setModal(null);
   };
 
   // Create PIN and then trigger the transfer
@@ -236,8 +186,7 @@ useEffect(() => {
     try {
       await setPin({ pin: newPin }).unwrap();
       toast.success("PIN created successfully!");
-      setShowCreatePin(false);
-      // After creating pin, proceed to password (transfer pin) entry
+      setShowCreatePinModal(false);
       setModal("password");
     } catch (err: any) {
       toast.error(err?.data?.message || "Failed to set PIN");
@@ -253,10 +202,10 @@ useEffect(() => {
     const bankCode = bankCodeMap[selectedBank] || selectedBank;
 
     const payload = {
-      account_number: accountNumber,   // ← was `phone`
-      bank_code: bankCode,             // send code, not display name
+      destinationAccount: accountNumber,   // ← was `phone`
+      destinationBankCode: bankCode,             // send code, not display name
       amount: formattedAmountNum,
-      pin: pinCode,                    // include the PIN in the transfer
+      transaction_pin: pinCode,                    // include the PIN in the transfer
       ...(accountName && { account_name: accountName }),
     };
 
@@ -423,11 +372,10 @@ useEffect(() => {
   // ENTER AMOUNT + MODALS
   // ─────────────────────────────────────────────────────────────────────────
   const pinCode = pinValues.join("");
-  const createPinCode = createPinValues.join("");
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center p-4">
-      <div className={`w-full max-w-md bg-white rounded-2xl shadow-sm p-6 transition-all ${modal || showCreatePin ? "opacity-40 pointer-events-none select-none" : ""}`}>
+      <div className={`w-full max-w-md bg-white rounded-2xl shadow-sm p-6 transition-all ${modal || showCreatePinModal ? "opacity-40 pointer-events-none select-none" : ""}`}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => setStep("account")} className="text-gray-700 hover:text-gray-900 transition-colors">
@@ -505,19 +453,25 @@ useEffect(() => {
           <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6 text-center">
             <h2 className="text-lg font-bold text-gray-900 mb-2">Enter transfer PIN</h2>
             <p className="text-xs text-gray-400 mb-5">Enter your 4-digit PIN to confirm</p>
-            <div className="flex justify-center gap-2 mb-5">
-              {pinValues.map((v, i) => (
-                <PinDigit
-                  key={i}
-                  value={v}
-                  onChange={(ch) => {
-                    const next = [...pinValues];
-                    next[i] = ch;
-                    setPinValues(next);
-                  }}
-                  show={showPin}
-                />
-              ))}
+            <div className="mb-5">
+              <input
+                type={showPin ? "text" : "password"}
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="Enter PIN"
+                value={pinValues.join("")}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  const arr = val.padEnd(4, "").split("");
+                  setPinValues(arr);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && pinValues.join("").length === 4) {
+                    handleTransfer();
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-lg font-semibold tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1E35C8]"
+              />
             </div>
             <button
               onClick={() => setShowPin((p) => !p)}
@@ -527,7 +481,7 @@ useEffect(() => {
             </button>
             <div className="flex gap-3">
               <button
-                onClick={() => { setModal(null); setPinValues(["", "", "", "", "", ""]); }}
+                onClick={() => { setModal(null); setPinValues(["", "", "", ""]); }}
                 className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 Cancel
@@ -545,39 +499,45 @@ useEffect(() => {
       )}
 
       {/* ── CREATE PIN MODAL */}
-      {showCreatePin && (
+{showCreatePinModal && (
         <Backdrop>
           <div className="bg-white rounded-2xl shadow-xl w-[320px] p-6 text-center">
             <h2 className="text-lg font-bold text-gray-900 mb-2">Create a transfer PIN</h2>
             <p className="text-xs text-gray-400 mb-5">This PIN protects your transfers. You'll need it every time you send money.</p>
-            <div className="flex justify-center gap-2 mb-5">
-              {createPinValues.map((v, i) => (
-                <PinDigit
-                  key={i}
-                  value={v}
-                  onChange={(ch) => {
-                    const next = [...createPinValues];
-                    next[i] = ch;
-                    setCreatePinValues(next);
-                  }}
-                  show={revealCreatePin}
-                />
-              ))}
+            <div className="mb-5">
+              <input
+                type={showPinInput ? "text" : "password"}
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="Enter PIN"
+                value={createPinValues.join("")}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  const arr = val.padEnd(4, "").split("");
+                  setCreatePinValues(arr);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && createPinValues.join("").length === 4) {
+                    handleCreatePin();
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-lg font-semibold tracking-widest focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+              />
             </div>
-            <button onClick={() => setRevealCreatePin(p => !p)}>
-              {revealCreatePin ? "Hide" : "Show"}
+            <button onClick={() => setShowPinInput(p => !p)} className="text-xs text-gray-400 hover:text-gray-600 mb-5">
+              {showPinInput ? "Hide" : "Show"}
             </button>
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowCreatePin(false); setCreatePinValues(["", "", "", ""]); }}
+                onClick={() => { setShowCreatePinModal(false); setCreatePinValues(["", "", "", ""]); }}
                 className="flex-1 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreatePin}
-                disabled={pinLoading || createPinCode.length < 4}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${pinLoading || createPinCode.length < 4 ? "bg-[#FF6B00]/40 text-white/70 cursor-not-allowed" : "bg-[#FF6B00] text-white hover:bg-[#e05f00] active:scale-[0.98]"}`}
+                disabled={pinLoading || createPinValues.join("").length < 4}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${pinLoading || createPinValues.join("").length < 4 ? "bg-[#FF6B00]/40 text-white/70 cursor-not-allowed" : "bg-[#FF6B00] text-white hover:bg-[#e05f00] active:scale-[0.98]"}`}
               >
                 {pinLoading ? "Saving…" : "Save PIN"}
               </button>

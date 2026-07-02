@@ -498,8 +498,8 @@ export function PurchaseTicketFlow({
   });
   const [pinSetLocally, setPinSetLocally] = useState(false);
 
-  const serverSaysNoPin = pinCheckError || pinCheckData?.pin_set === false;
-  const serverSaysHasPin = pinSetLocally || pinCheckData?.pin_set === true || pinCheckSuccess === true;
+  const serverSaysNoPin = pinCheckError || (pinCheckData && pinCheckData.pin_set === false);
+  const serverSaysHasPin = pinSetLocally || (pinCheckData && pinCheckData.pin_set === true);
   const hasPin = serverSaysHasPin && !serverSaysNoPin;
 
   useEffect(() => {
@@ -556,6 +556,7 @@ export function PurchaseTicketFlow({
       setNewPin("");
       setConfirmNewPin("");
       setPinSetLocally(true);
+      await handleRealPurchase(newPin);
     } catch (err: any) {
       const message = err?.data?.detail || err?.data?.message || "Failed to set PIN.";
       toast.error(message);
@@ -565,7 +566,7 @@ export function PurchaseTicketFlow({
   };
 
   // Real purchase submission using the event's ticket id
-  const handleRealPurchase = async () => {
+  const handleRealPurchase = async (pin?: string) => {
     dispatch(purchaseStart());
 
     try {
@@ -574,7 +575,7 @@ export function PurchaseTicketFlow({
         copies: quantity,
         full_name: contactInfo.fullName,
         email: contactInfo.email,
-        transaction_pin: contactInfo.transactionPin,
+        transaction_pin: pin ?? contactInfo.transactionPin,
       };
 
       await ewalletCheckoutMutation(payload).unwrap();
