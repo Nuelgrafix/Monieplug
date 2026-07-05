@@ -5,16 +5,22 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import Image from "next/image";
 import { IoMdNotificationsOutline } from "react-icons/io";
+import { useEffect, useState } from "react";
 
 export default function DashboardHeaderProfile() {
   // `getCurrentUser` is currently in Redux auth state but not exported yet;
   // we grab the user id from there and enrich via the `/authent/users/{id}/` endpoint.
+  const [mounted, setMounted] = useState(false);
   const authUser: any = useSelector((state: RootState) => state.auth.user);
   const userId = authUser?.id;
 
   const { data: profile, isLoading } = useGetUserByIdQuery(userId ?? "", {
     skip: !userId,
   });
+
+   useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const name = profile?.first_name
     ? `${profile.first_name}${profile.last_name ? " " + profile.last_name : ""}`
@@ -24,7 +30,7 @@ export default function DashboardHeaderProfile() {
 
   const avatar = profile?.avatar || authUser?.avatar || "/profile-img.png";
 
-  if (isLoading) {
+ if (!mounted || isLoading) {
     return (
       <div className="flex items-center gap-[8px]">
         <div className="w-[40px] h-[40px] rounded-full bg-gray-200 animate-pulse" />
