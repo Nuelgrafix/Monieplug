@@ -39,11 +39,8 @@ export const apiSlice = createApi({
       query: (pin) => ({
         url: "/authent/set-pin/",
         method: "POST",
-        body: pin,
+        body: { pin },
       }),
-    }),
-    checkTransactionPin: builder.query({
-      query: () => "/authent/check-transaction-pin/",
     }),
     transferFunds: builder.mutation({
       query: (data) => ({
@@ -57,13 +54,6 @@ export const apiSlice = createApi({
         url: "/authent/verify-account/",
         method: "POST",
         body: data,
-      }),
-    }),
-    otherBankEnquiry: builder.mutation({
-      query: (data) => ({
-        url: "/authent/other-bank-enquiry/",
-        method: "POST",
-        body: { customer: data },
       }),
     }),
     verifyEmail: builder.mutation({
@@ -97,13 +87,6 @@ export const apiSlice = createApi({
     getBalance: builder.mutation({
       query: (data) => ({
         url: "/authent/get-balance/",
-        method: "POST",
-        body: data,
-      }),
-    }),
-    getTransactionHistory: builder.mutation({
-      query: (data) => ({
-        url: "/authent/transaction-history/",
         method: "POST",
         body: data,
       }),
@@ -189,13 +172,6 @@ export const apiSlice = createApi({
         body: ticketData,
       }),
     }),
-    ewalletCheckout: builder.mutation({
-      query: (data) => ({
-        url: "/event/ewallet/checkout/",
-        method: "POST",
-        body: data,
-      }),
-    }),
     getUserTickets: builder.query({
       query: () => "/tickets/my-tickets/",
     }),
@@ -250,16 +226,13 @@ export const {
   useSignupMutation,
   useResetPasswordMutation,
   useSetPinMutation,
-  useCheckTransactionPinQuery,
   useTransferFundsMutation,
   useVerifyAccountMutation,
-  useOtherBankEnquiryMutation,
   useVerifyEmailMutation,
   usePaymentWebhookMutation,
   useForgotPasswordMutation,
   useSendOtpMutation,
   useGetBalanceMutation,
-  useGetTransactionHistoryMutation,
   useGetEventsQuery,
   useGetEventByIdQuery,
   useCreateEventMutation,
@@ -273,7 +246,6 @@ export const {
   usePatchTicketMutation,
   useDeleteTicketMutation,
   usePurchaseTicketMutation,
-  useEwalletCheckoutMutation,
   useGetUserTicketsQuery,
   useGetUserByIdQuery,
   useGetBanksQuery,

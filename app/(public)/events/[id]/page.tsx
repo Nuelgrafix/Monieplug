@@ -2,19 +2,9 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Calendar, Share2 } from "lucide-react";
-import { useState } from 'react'
-import { useGetEventByIdQuery } from '@/redux/slices/apiSlice';
+import React, { useState } from 'react'
+import { popularEvents, upcomingEvents } from '@/data/events'
 import { PurchaseTicketFlow } from '@/components/PurchaseTicketFlow'
-
-type Ticket = { id: number; name: string; price: string; ticket_image?: string };
-type Organizer = { id: number; full_name?: string; email?: string; phone?: string; bank_name?: string; account_number?: string; account_name?: string };
-type Event = { id: number; title: string; description?: string; short_description?: string; image?: string; cover_image?: string; date?: string; content?: { type: string; text: string }[]; tickets?: Ticket[]; organizer?: Organizer };
-
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 
 
 export default function EventDetailPage() {
@@ -22,14 +12,12 @@ export default function EventDetailPage() {
   const params = useParams();
   const id = parseInt(params.id as string);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const { data: event, isLoading } = useGetEventByIdQuery(id) as { data: Event | undefined, isLoading: boolean };
 
-  if (isLoading) {
-    return <div className="flex-1 bg-[#F5F5F5] min-h-screen p-6">Loading...</div>;
-  }
+  const allEvents = [...popularEvents, ...upcomingEvents];
+  const event = allEvents.find(e => e.id === id);
 
   if (!event) {
-    return <div className="flex-1 bg-[#F5F5F5] min-h-screen p-6">Event not found</div>;
+    return <div>Event not found</div>;
   }
 
   const handleShare = async () => {
@@ -43,7 +31,7 @@ export default function EventDetailPage() {
 
 
   if (isPurchasing) {
-    return <PurchaseTicketFlow onClose={() => setIsPurchasing(false)} event={event} />;
+    return <PurchaseTicketFlow onClose={() => setIsPurchasing(false)} />;
   }
 
   return (
@@ -61,7 +49,7 @@ export default function EventDetailPage() {
             <h1 className="text-base font-bold text-gray-900 leading-tight">{event.title}</h1>
             <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
               <Calendar size={12} />
-              <span>{formatDate(event.date)}</span>
+              <span>{event.date}</span>
             </div>
           </div>
         </div>
@@ -70,9 +58,9 @@ export default function EventDetailPage() {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Left – image + actions */}
           <div className="md:w-[340px] flex-shrink-0">
-<div className="rounded-xl overflow-hidden aspect-[4/3] bg-gray-100 mb-4">
+            <div className="rounded-xl overflow-hidden aspect-[4/3] bg-gray-100 mb-4">
               <img
-                src={event.image || event.cover_image || "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80"}
+                src={event.image}
                 alt={event.title}
                 className="w-full h-full object-cover"
               />
@@ -97,7 +85,7 @@ export default function EventDetailPage() {
 
           {/* Right – description */}
           <div className="flex-1 text-sm text-gray-700 leading-relaxed space-y-3">
-            {event.content?.map((block, i) => {
+            {event.content.map((block, i) => {
               if (block.type === "heading") {
                 return (
                   <p key={i} className="font-semibold text-gray-900">

@@ -5,7 +5,6 @@ import saveCredentialsReducer from "./slices/saveCredentials";
 import eventsReducer from "./slices/eventsSlice";
 import ticketsReducer from "./slices/ticketsSlice";
 import uiReducer from "./slices/uiSlice";
-import transactionHistoryReducer from "./slices/transactionHistorySlice";
 
 const store = configureStore({
   reducer: {
@@ -14,7 +13,6 @@ const store = configureStore({
     events: eventsReducer,
     tickets: ticketsReducer,
     ui: uiReducer,
-    transactionHistory: transactionHistoryReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
   },
   middleware: (getDefaultMiddleware) =>

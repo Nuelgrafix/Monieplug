@@ -55,14 +55,12 @@ function PopularEventCard({
 }) {
   return (
     <div className="cursor-pointer group" onClick={onClick}>
-      <div className="rounded-xl overflow-hidden mb-2 aspect-[4/3] w-full bg-gray-100">
-        {image && (
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        )}
+      <div className="rounded-xl overflow-hidden mb-2 aspect-[4/3] w-full">
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
       </div>
       <p className="text-sm font-semibold text-gray-900 leading-tight">{title}</p>
       <p className="text-xs text-gray-500 mt-0.5">{location} · {formatDate(date)}</p>
@@ -89,13 +87,11 @@ function UpcomingEventCard({
   return (
     <div className="cursor-pointer group" onClick={onClick}>
       <div className="rounded-xl overflow-hidden mb-2 aspect-square bg-gray-100 w-full">
-        {image && (
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        )}
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
       </div>
       <p className="text-sm font-semibold text-gray-900 leading-tight">{title}</p>
       <p className="text-xs text-gray-500 mt-0.5">{location} · {formatDate(date)}</p>
