@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '@/redux/store';
+import {
+  selectTicket,
+  setQuantity,
+  updateContactInfo,
+  purchaseStart,
+  purchaseSuccess,
+  purchaseFailure,
+  resetTicketFlow,
+} from '@/redux/slices/ticketsSlice';
 import {
   X,
   ArrowLeft,
@@ -10,14 +20,15 @@ import {
   Ticket,
   Plus,
   Minus,
-  CreditCard,
   CheckCircle2,
 } from "lucide-react";
+import { useGetTicketByIdQuery, usePurchaseTicketMutation } from '@/redux/slices/apiSlice';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CreateStep = "describe" | "tickets";
-type BuyStep = "choose" | "contact" | "checkout" | "success";
+type BuyStep = "choose" | "contact" | "checkout" | "transfer" | "card" | "success";
+type Method = "card" | "transfer" | null;
 
 interface TicketVariation {
   id: number;
@@ -92,26 +103,32 @@ function OrderSummary({
   onAction,
   actionDisabled = false,
   actionLabel = "Continue",
+  fee,
+  charges: chargesProp,
 }: {
-  ticketPrice: number;
+  ticketPrice?: number;
   qty?: number;
   isCheckout?: boolean;
   onAction: () => void;
   actionDisabled?: boolean;
   actionLabel?: string;
+  fee?: number;
+  charges?: number;
 }) {
-  const subtotal = ticketPrice * qty + CHARGES;
+  const charges = chargesProp ?? CHARGES;
+  const ticketFee = fee ?? (ticketPrice ?? 0) * qty;
+  const subtotal = ticketFee + charges;
   return (
     <div className="w-full sm:w-64 flex-shrink-0 bg-white rounded-2xl p-5 shadow-sm self-start">
       <h3 className="text-base font-bold text-gray-900 mb-4">Order Summary</h3>
       <div className="space-y-2 text-sm mb-4">
         <div className="flex justify-between text-gray-600">
-          <span>{isCheckout ? `Summary (${qty} ticket)` : "Ticket fee"}</span>
-          <span>{fmt(ticketPrice * qty)}</span>
+          <span>{isCheckout ? `Summary (${qty} ticket${qty > 1 ? 's' : ''})` : "Ticket fee"}</span>
+          <span>{fmt(ticketFee)}</span>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Charges</span>
-          <span>{fmt(CHARGES)}</span>
+          <span>{fmt(charges)}</span>
         </div>
         <div className="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-2 mt-2">
           <span>{isCheckout ? "Total" : "Subtotal"}</span>
@@ -137,7 +154,7 @@ function OrderSummary({
 // CREATE EVENT MODAL  (screens 1 + 2 + 3)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function CreateEventModal({ onClose }: { onClose: () => void }) {
+export function CreateEventModal({ onClose }: { onClose?: () => void }) {
   const [step, setStep] = useState<CreateStep>("describe");
   const [description, setDescription] = useState("");
   const [previewImg, setPreviewImg] = useState<string | null>(null);
@@ -360,19 +377,102 @@ export function CreateEventModal({ onClose }: { onClose: () => void }) {
 // PURCHASE TICKET FLOW  (screens 4 → 5 → 6 → 7)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
+export function PurchaseTicketFlow({ 
+  onClose, 
+  event 
+}: { 
+  onClose: () => void; 
+  event?: any; // ApiEvent from the detail page with tickets
+}) {
+  // Payment config
+  const BANK_NAME = "FidelityMoniePlug";
+  const ACCT_NUMBER = "9038340539";
+  const ACCT_NAME = "Emmanuel N.";
+
   const [step, setStep] = useState<BuyStep>("choose");
-  const [selectedTicket, setSelectedTicket] = useState(0);
-  const [qty, setQty] = useState(1);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [confirmEmail, setConfirmEmail] = useState("");
+  const [method, setMethod] = useState<Method>(null);
+  const [copied, setCopied] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const { selectedTicketIndex, quantity, contactInfo, purchaseLoading, purchaseSuccess } = useSelector((state: RootState) => state.tickets);
 
-  const ticket = TICKET_OPTIONS[selectedTicket];
-  const emailsMatch = email && email === confirmEmail;
-  const contactValid = fullName.trim() && emailsMatch;
+  const [purchaseTicketMutation] = usePurchaseTicketMutation();
 
-  if (step === "success") {
+  // Use real tickets from the event (integrated from /event/events/{id}/) or fallback
+  const realTickets = event?.tickets || [];
+  const hasRealTickets = realTickets.length > 0;
+  const eventId = event?.id;
+
+  const displayTickets = hasRealTickets
+    ? realTickets.map((t: any, idx: number) => ({
+        id: t.id,
+        label: t.name || `Ticket ${idx + 1}`,
+        price: parseFloat(t.price) || 0,
+        color: "bg-orange-100 text-orange-500",
+        ticket_image: t.ticket_image,
+        original: t,
+      }))
+    : TICKET_OPTIONS.map((t: any, i: number) => ({ 
+        ...t, 
+        id: i, 
+        label: t.label, 
+        price: t.price 
+      }));
+
+  // Currently selected ticket (real or fallback)
+  const currentDisplayTicket = displayTickets[selectedTicketIndex] || displayTickets[0];
+  const ticket = {
+    label: currentDisplayTicket?.label,
+    price: currentDisplayTicket?.price || 0,
+  };
+
+  // Real selected ticket object (for purchase payload)
+  const selectedRealTicket = hasRealTickets ? realTickets[selectedTicketIndex] : null;
+
+  // Integrate /event/tickets/{id}/ — fetch full details for the selected real ticket
+  const { data: ticketDetails } = useGetTicketByIdQuery(
+    selectedRealTicket?.id ?? 0,
+    { skip: !selectedRealTicket?.id }
+  );
+  const emailsMatch = contactInfo.email && contactInfo.email === contactInfo.confirmEmail;
+  const contactValid = contactInfo.fullName.trim() && emailsMatch;
+
+  const copy = () => {
+    navigator.clipboard.writeText(ACCT_NUMBER);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Real purchase submission using the event's ticket id
+  const handleRealPurchase = async () => {
+    dispatch(purchaseStart());
+
+    try {
+      const payload: any = {
+        ticket_id: selectedRealTicket?.id ?? currentDisplayTicket?.id,
+        quantity,
+        full_name: contactInfo.fullName,
+        email: contactInfo.email,
+      };
+
+      // Include event_id when we have real event data
+      if (eventId) {
+        payload.event_id = eventId;
+      }
+
+      await purchaseTicketMutation(payload).unwrap();
+
+      dispatch(purchaseSuccess());
+      setStep("success");
+    } catch (err: any) {
+      const message = err?.data?.detail || err?.data?.message || "Purchase failed. Please try again.";
+      // We can dispatch purchaseFailure if we want to show error in UI
+      console.error("Purchase error:", err);
+      alert(message); // temporary until we add better error UI
+      dispatch(purchaseFailure(message));
+    }
+  };
+
+  if (step === "success" || purchaseSuccess) {
     return (
       <div className="flex-1 bg-[#F5F5F5] min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm p-16 flex flex-col items-center text-center">
@@ -382,10 +482,13 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           <h2 className="text-lg font-bold text-gray-900 mb-2">Ticket purchase successful</h2>
           <p className="text-sm text-gray-500">
             Copy your ticket has been sent to this email:{" "}
-            <span className="font-bold text-gray-800">{email || "email@gmail.com"}</span>
+            <span className="font-bold text-gray-800">{contactInfo.email || "email@gmail.com"}</span>
           </p>
           <button
-            onClick={onClose}
+            onClick={() => {
+              dispatch(resetTicketFlow());
+              onClose();
+            }}
             className="mt-8 px-8 py-3 rounded-xl bg-[#1E35C8] text-white text-sm font-semibold hover:bg-[#1a2eb0] transition-all"
           >
             Back to Home
@@ -403,6 +506,7 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           if (step === "choose") onClose();
           else if (step === "contact") setStep("choose");
           else if (step === "checkout") setStep("contact");
+          else if (step === "transfer" || step === "card") setStep("checkout");
         }}
         className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 mb-4"
       >
@@ -420,23 +524,37 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           {step === "choose" && (
             <>
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Choose a ticket</h2>
-              <div className="flex gap-3 flex-wrap">
-                {TICKET_OPTIONS.map((t, i) => (
-                  <button
-                    key={t.label}
-                    onClick={() => setSelectedTicket(i)}
-                    className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all w-28 ${
-                      selectedTicket === i ? "border-orange-400 shadow-sm" : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${t.color}`}>
-                      <Ticket size={18} />
-                    </div>
-                    <span className="text-xs text-gray-500 mb-0.5">{t.label}</span>
-                    <span className="text-sm font-bold text-gray-900">{fmt(t.price)}</span>
-                  </button>
-                ))}
-              </div>
+               {hasRealTickets && displayTickets.length === 0 ? (
+                <div className="text-sm text-gray-500 py-4">
+                  No tickets available for this event yet.
+                </div>
+              ) : (
+                <div className="flex gap-3 flex-wrap">
+                  {displayTickets.map((t: any, i: number) => (
+                    <button
+                      key={t.id ?? i}
+                      onClick={() => dispatch(selectTicket(i))}
+                      className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all w-28 overflow-hidden ${
+                        selectedTicketIndex === i ? "border-orange-400 shadow-sm" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      {hasRealTickets && t.ticket_image ? (
+                        <img 
+                          src={t.ticket_image} 
+                          alt={t.label}
+                          className="w-10 h-10 rounded-xl object-cover mb-2" 
+                        />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${t.color}`}>
+                          <Ticket size={18} />
+                        </div>
+                      )}
+                      <span className="text-xs text-gray-500 mb-0.5">{t.label}</span>
+                      <span className="text-sm font-bold text-gray-900">{fmt(t.price)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
@@ -447,35 +565,35 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input
                   placeholder="Full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={contactInfo.fullName}
+                  onChange={(e) => dispatch(updateContactInfo({ fullName: e.target.value }))}
                   className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30"
                 />
                 <input
                   type="email"
                   placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={contactInfo.email}
+                  onChange={(e) => dispatch(updateContactInfo({ email: e.target.value }))}
                   className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30"
                 />
                 {/* Qty picker */}
                 <div className="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-400">
                   <span className="flex-1">Copy of ticket</span>
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="text-gray-500 hover:text-gray-800">
+                  <button onClick={() => dispatch(setQuantity(quantity - 1))} className="text-gray-500 hover:text-gray-800">
                     <Minus size={14} />
                   </button>
-                  <span className="text-gray-800 font-medium w-4 text-center">{qty}</span>
-                  <button onClick={() => setQty((q) => q + 1)} className="text-gray-500 hover:text-gray-800">
+                  <span className="text-gray-800 font-medium w-4 text-center">{quantity}</span>
+                  <button onClick={() => dispatch(setQuantity(quantity + 1))} className="text-gray-500 hover:text-gray-800">
                     <Plus size={14} />
                   </button>
                 </div>
                 <input
                   type="email"
                   placeholder="Confirm email address"
-                  value={confirmEmail}
-                  onChange={(e) => setConfirmEmail(e.target.value)}
+                  value={contactInfo.confirmEmail}
+                  onChange={(e) => dispatch(updateContactInfo({ confirmEmail: e.target.value }))}
                   className={`border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/30 ${
-                    confirmEmail && !emailsMatch ? "border-red-300" : "border-gray-200"
+                    contactInfo.confirmEmail && !emailsMatch ? "border-red-300" : "border-gray-200"
                   }`}
                 />
               </div>
@@ -489,18 +607,77 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
           {step === "checkout" && (
             <>
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Payment method</h2>
-              <div className="border border-gray-200 rounded-xl p-4 flex items-start gap-3 w-48">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <CreditCard size={16} className="text-gray-500" />
+              <div className="flex gap-3 flex-wrap">
+                {(["card", "transfer"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMethod(m)}
+                    className={`flex items-center gap-2 border rounded-lg px-4 py-2.5 text-sm transition-all ${
+                      method === m
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-300 text-gray-600 hover:border-gray-400"
+                    }`}
+                  >
+                    {m === "card" ? (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={1.8}>
+                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                        <path d="M2 10h20" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    )}
+                    {m === "card" ? "Pay with Bank card" : "Transfer"}
+                    <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors ${
+                      method === m ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                    }`} />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* STEP: Bank Transfer */}
+          {step === "transfer" && (
+            <>
+              <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Transfer</h2>
+              <p className="text-sm text-gray-500 mb-4">Make payment through bank transfer to</p>
+
+              <div className="border border-gray-200 rounded-xl px-6 py-5 inline-block min-w-[220px]">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl font-bold text-[#2338e0] tracking-wide">{ACCT_NUMBER}</span>
+                  <button onClick={copy} title="Copy account number" className="text-gray-400 hover:text-gray-700 transition-colors">
+                    {copied ? (
+                      <CheckCircle2 size={20} />
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth={1.8}>
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-gray-800">Pay from Wallet</span>
-                    <span className="w-2 h-2 rounded-full bg-orange-400" />
-                  </div>
-                  <p className="text-xs text-[#1E35C8] font-medium">Bal. ₦0.0</p>
-                  <p className="text-xs text-orange-500">Insufficient</p>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span className="text-[#2338e0] font-medium">{BANK_NAME}</span>
+                  <span>{ACCT_NAME}</span>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* STEP: Bank Card */}
+          {step === "card" && (
+            <>
+              <h2 className="text-sm font-bold text-gray-900 mb-1">Paying through Bank Card</h2>
+              <p className="text-sm text-gray-500 mb-4">Add your bank card to make payment</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input placeholder="Bank name" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input placeholder="Card number" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" inputMode="numeric" maxLength={19} />
+                <input placeholder="Expiry date: MM/YY" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input placeholder="CVV" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" maxLength={4} type="password" />
+                <input placeholder="Card pin" className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 sm:col-span-1" maxLength={4} type="password" />
               </div>
             </>
           )}
@@ -508,16 +685,23 @@ export function PurchaseTicketFlow({ onClose }: { onClose: () => void }) {
 
         {/* ── Order Summary ── */}
         <OrderSummary
-          ticketPrice={ticket.price}
-          qty={qty}
-          isCheckout={step !== "choose"}
-          onAction={() => {
+          ticketPrice={step === "checkout" ? undefined : ticket.price}
+          qty={quantity}
+          isCheckout={step !== "choose" && step !== "contact"}
+          fee={step === "checkout" ? ticket.price * quantity : undefined}
+          charges={step === "checkout" ? CHARGES : undefined}
+          onAction={async () => {
             if (step === "choose") setStep("contact");
             else if (step === "contact" && contactValid) setStep("checkout");
-            else if (step === "checkout") setStep("success");
+            else if (step === "checkout" && method) {
+              setStep(method as "transfer" | "card");
+            }
+            else if (step === "transfer" || step === "card") {
+              await handleRealPurchase();
+            }
           }}
-          actionDisabled={step === "contact" && !contactValid}
-          actionLabel={step === "checkout" ? "Checkout" : "Continue"}
+          actionDisabled={(step === "contact" && !contactValid) || (step === "checkout" && !method) || purchaseLoading}
+          actionLabel={purchaseLoading ? "Processing..." : step === "transfer" ? "I have paid" : step === "card" ? "Checkout" : step === "checkout" ? "Continue" : "Continue"}
         />
       </div>
     </div>

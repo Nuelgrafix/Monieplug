@@ -10,7 +10,7 @@ const PageLoader = () => {
           alt=""
           width={700}
           height={700}
-          src="/TT Blue 1.png"
+          src="/logo.jpg"
           className=" w-[150px] lg:w-[200px]"
         />
         <div className="flex">

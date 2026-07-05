@@ -9,10 +9,9 @@ interface AdminMobileDrawerProps {
   isOpen: boolean
   handleLogout: () => void
   onClose: () => void
-  btnRef: React.RefObject<HTMLButtonElement>
 }
 
-export default function AdminMobileDrawer({ isOpen, handleLogout, onClose, btnRef }: AdminMobileDrawerProps) {
+export default function AdminMobileDrawer({ isOpen, handleLogout, onClose }: AdminMobileDrawerProps) {
   const pathname = usePathname()
 
   if (!isOpen) return null
@@ -25,7 +24,7 @@ export default function AdminMobileDrawer({ isOpen, handleLogout, onClose, btnRe
       />
       <div className="fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform">
         <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-lg font-semibold">Monieplug Admin</h2>
+          <h2 className="text-lg font-semibold">Monieplug</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
           </button>

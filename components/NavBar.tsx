@@ -9,7 +9,7 @@ const NavBar = () => {
       <div className='flex flex-col w-full gap-[30px] items-start mt-[40px]'>
       <div className='w-[145px] gap-[32px] flex flex-col items-start h-[112px] '>
         <Image src="/logo.jpg" alt="Monieplug Logo" width={100} height={100} className='w-[106px] h-[32px] rounded-[4px]' />
-        <Link href="/" className='flex justify-center items-center text-white max-w-[140px] h-[48px] px-[20px] py-[12px] rounded-[8px] border border-[#FF7F00] text-[16px] bg-[#FF7F00] font-semibold'>
+        <Link href="/dashboard/events/create" className='flex justify-center items-center text-white max-w-[140px] h-[48px] px-[20px] py-[12px] rounded-[8px] border border-[#FF7F00] text-[16px] bg-[#FF7F00] font-semibold'>
         Create event
         </Link>
       </div>
