@@ -54,9 +54,7 @@ export default function CreateEventModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full overflow-hidden bg-orange-100 flex-shrink-0">
-              {displayAvatar && (
-                <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-              )}
+              <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
             </div>
             <span className="text-sm font-semibold text-gray-800">{displayName}</span>
           </div>

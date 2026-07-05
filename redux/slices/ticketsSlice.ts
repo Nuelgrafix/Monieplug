@@ -21,7 +21,6 @@ interface TicketsState {
     fullName: string;
     email: string;
     confirmEmail: string;
-    transactionPin: string;
   };
   ticketVariations: TicketVariation[];
   purchaseLoading: boolean;
@@ -36,7 +35,6 @@ const initialState: TicketsState = {
     fullName: '',
     email: '',
     confirmEmail: '',
-    transactionPin: '',
   },
   ticketVariations: [
     { id: Date.now(), name: '', fee: '', image: '', date: '' },
@@ -101,7 +99,7 @@ const ticketsSlice = createSlice({
     resetTicketFlow: (state) => {
       state.selectedTicketIndex = 0;
       state.quantity = 1;
-      state.contactInfo = { fullName: '', email: '', confirmEmail: '', transactionPin: '' };
+      state.contactInfo = { fullName: '', email: '', confirmEmail: '' };
       state.purchaseLoading = false;
       state.purchaseError = null;
       state.purchaseSuccess = false;

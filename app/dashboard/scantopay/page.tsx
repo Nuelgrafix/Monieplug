@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, X, Share2, Pencil } from "lucide-react";
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useCreateQRCodeMutation } from "@/redux/slices/apiSlice";
 import { useRouter } from "next/navigation";
@@ -16,8 +16,7 @@ interface Variation {
 
 interface CreateQRResponse {
   message: string;
-  qr_code_url: string;
-  vendor_id: string;
+  qr_code_url: string; // e.g. "/media/scan2pay/qrcodes/uuid.png"
 }
 
 const BASE_URL = "https://monieplug.onrender.com";
@@ -109,13 +108,11 @@ function QRDisplayPage({
         {/* QR Card — shows the actual image returned by the backend */}
         <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center mb-5">
           <p className="text-sm text-gray-700 mb-5 font-medium">Scan Me to make payment</p>
-          {qrImageUrl && (
-            <img
-              src={qrImageUrl}
-              alt="Payment QR Code"
-              className="w-[220px] h-[220px] object-contain"
-            />
-          )}
+          <img
+            src={qrImageUrl}
+            alt="Payment QR Code"
+            className="w-[220px] h-[220px] object-contain"
+          />
         </div>
 
         {/* Actions */}
@@ -158,9 +155,7 @@ function SetupPaymentQR() {
   const [showLoadingModal, setShowLoadingModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState("");
-  const [vendorId, setVendorId] = useState<string | null>(null);
 
-  const router = useRouter();
   const [createQRCode, { isLoading: isCreating }] = useCreateQRCodeMutation();
 
   const addVariation = () => setVariations((v) => [...v, { id: Date.now(), name: "" }]);
@@ -169,12 +164,6 @@ function SetupPaymentQR() {
     setVariations((v) => v.map((x) => (x.id === id ? { ...x, name } : x)));
 
   const canGenerate = businessName.trim() && businessAddress.trim() && qrLabel.trim();
-
-  useEffect(() => {
-    if (vendorId) {
-      router.push(`/scantopay/qr?vendor=${vendorId}`);
-    }
-  }, [vendorId, router]);
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -197,11 +186,9 @@ function SetupPaymentQR() {
         throw new Error("No QR code image returned from server");
       }
 
+      // Build the full image URL from the relative path the API returns
       const fullImageUrl = `${BASE_URL}${response.qr_code_url}`;
       setQrImageUrl(fullImageUrl);
-      if (response.vendor_id) {
-        setVendorId(response.vendor_id);
-      }
       setShowLoadingModal(false);
       setShowQRModal(true);
     } catch (err: unknown) {

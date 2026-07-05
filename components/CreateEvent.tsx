@@ -12,9 +12,6 @@ import {
   Clock,
   Sparkles,
   CheckCircle2,
-  Ticket,
-  Plus,
-  Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCreateEventMutation } from "@/redux/slices/apiSlice";
@@ -29,23 +26,12 @@ interface FormErrors {
   image?: string;
 }
 
-interface TicketVariation {
-  id: number;
-  name: string;
-  fee: string;
-  image: File | string;
-}
-
-interface MainTicket {
-  name: string;
-  fee: string;
-  image: File | string;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toISODateTime(dateStr: string, timeStr: string): string {
   if (!dateStr || !timeStr) return "";
+  // Send without milliseconds + Z (e.g. 2026-05-28T12:15:00)
+  // This format is more commonly accepted by the backend than full ISO UTC
   return `${dateStr}T${timeStr}:00`;
 }
 
@@ -71,6 +57,7 @@ function validate(
 
   if (!location.trim()) errors.location = "Location is required";
 
+  // image is now optional file upload — no URL validation needed
   return errors;
 }
 
@@ -144,100 +131,6 @@ function ImagePreview({ preview, onClear }: { preview: string | null; onClear: (
   );
 }
 
-// ─── Ticket Form ──────────────────────────────────────────────────────────────
-
-function TicketForm({
-  values,
-  onChange,
-}: {
-  values: { name: string; fee: string; image: File | string };
-  onChange: (field: string, value: File | string) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-3">
-        <input
-          type="text"
-          placeholder="Name e.g Regular, VIP, Early Bird"
-          value={values.name}
-          onChange={(e) => onChange("name", e.target.value)}
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#1E35C8]/25 focus:border-[#1E35C8] transition-all"
-        />
-        <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 bg-white w-36">
-          <Ticket size={14} className="text-gray-400 flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="Price"
-            value={values.fee}
-            onChange={(e) => onChange("fee", e.target.value)}
-            className="w-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none bg-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Image Upload Field */}
-      <div>
-        <div className="text-xs text-gray-500 mb-1.5">Ticket Image (optional)</div>
-        <label className="flex items-center gap-2 cursor-pointer border border-gray-200 hover:border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-700 bg-white transition-all">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onChange("image", file);
-              }
-            }}
-          />
-          <span className="text-[#1E35C8] font-medium">Choose image</span>
-          <span className="text-gray-400">or drop file here</span>
-        </label>
-
-        {values.image && typeof values.image !== "string" && (
-          <div className="mt-2 flex items-center gap-3 text-sm">
-            <img
-              src={URL.createObjectURL(values.image)}
-              alt="preview"
-              className="w-12 h-12 rounded-lg object-cover border"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="truncate text-gray-700">{values.image.name}</div>
-              <button
-                type="button"
-                onClick={() => onChange("image", "")}
-                className="text-xs text-red-500 hover:underline"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        )}
-        {values.image && typeof values.image === "string" && values.image && (
-          <div className="mt-2 flex items-center gap-3 text-sm">
-            <img
-              src={values.image}
-              alt="preview"
-              className="w-12 h-12 rounded-lg object-cover border"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="truncate text-gray-700">{values.image}</div>
-              <button
-                type="button"
-                onClick={() => onChange("image", "")}
-                className="text-xs text-red-500 hover:underline"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Success State ─────────────────────────────────────────────────────────────
 
 function SuccessScreen({ onReset }: { onReset: () => void }) {
@@ -249,7 +142,7 @@ function SuccessScreen({ onReset }: { onReset: () => void }) {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Event Created!</h2>
         <p className="text-sm text-gray-500 mb-8">
-          Your event has been published and tickets are now live for attendees to purchase.
+          Your event has been published and is now live for attendees to discover.
         </p>
         <button
           onClick={onReset}
@@ -295,14 +188,8 @@ export default function CreateEventPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Ticket state
-  const [mainTicket, setMainTicket] = useState<MainTicket>({ name: "", fee: "", image: "" });
-  const [ticketVariations, setTicketVariations] = useState<TicketVariation[]>([
-    { id: Date.now(), name: "", fee: "", image: "" },
-  ]);
-
   // UI state
-  const [step, setStep] = useState(0); // 0 = details, 1 = datetime & location, 2 = media, 3 = tickets
+  const [step, setStep] = useState(0); // 0 = details, 1 = datetime & location, 2 = media
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -310,7 +197,7 @@ export default function CreateEventPage() {
 
   const [createEvent, { isLoading: isCreating }] = useCreateEventMutation();
 
-  const STEPS = ["Details", "When & Where", "Media", "Tickets"];
+  const STEPS = ["Details", "When & Where", "Media"];
 
   const markTouched = (field: string) =>
     setTouched((p) => ({ ...p, [field]: true }));
@@ -322,27 +209,18 @@ export default function CreateEventPage() {
       const futureOk = date && time ? new Date(`${date}T${time}`) > new Date() : false;
       return date && time && location.trim() && futureOk;
     }
-    if (step === 2) return true; // image file optional
-    if (step === 3) {
-      // At least the main ticket name and fee should be filled
-      return mainTicket.name.trim().length > 0 && mainTicket.fee.trim().length > 0;
-    }
-    return true;
-  }, [step, title, description, date, time, location, mainTicket]);
+    return true; // image file optional
+  }, [step, title, description, date, time, location]);
 
   const handleNext = () => {
     if (!stepValid()) {
-      if (step === 0 || step === 1) {
-        const all = validate(title, description, date, time, location);
-        setErrors(all);
-        setTouched({ title: true, description: true, date: true, location: true, image: true });
-      }
-      if (step === 3) {
-        toast.error("Please fill in at least the ticket name and price");
-      }
+      // surface errors
+      const all = validate(title, description, date, time, location);
+      setErrors(all);
+      setTouched({ title: true, description: true, date: true, location: true, image: true });
       return;
     }
-    setStep((s) => Math.min(s + 1, 3));
+    setStep((s) => Math.min(s + 1, 2));
   };
 
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
@@ -359,30 +237,12 @@ export default function CreateEventPage() {
     setImagePreview(previewUrl);
   };
 
-  // Ticket handlers
-  const updateMainTicket = (field: string, value: File | string) =>
-    setMainTicket((m) => ({ ...m, [field]: value }));
-
-  const updateVariation = (id: number, field: string, value: File | string) =>
-    setTicketVariations((v) => v.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
-
-  const addVariation = () =>
-    setTicketVariations((v) => [...v, { id: Date.now(), name: "", fee: "", image: "" }]);
-
-  const removeVariation = (id: number) =>
-    setTicketVariations((v) => v.filter((x) => x.id !== id));
-
   const handleSubmit = async () => {
     const allErrors = validate(title, description, date, time, location);
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors);
       setTouched({ title: true, description: true, date: true, location: true, image: true });
       toast.error("Please fix the errors before submitting");
-      return;
-    }
-
-    if (!mainTicket.name.trim() || !mainTicket.fee.trim()) {
-      toast.error("Please fill in at least the ticket name and price");
       return;
     }
 
@@ -395,44 +255,16 @@ export default function CreateEventPage() {
       formData.append("location", location.trim());
 
       if (imageFile) {
-        formData.append("image", imageFile);
+        formData.append("image", imageFile); // actual file for multipart upload
       }
 
-      // Build tickets array
-      const ticketsArray: { name: string; price: number }[] = [];
-
-      // Add main ticket
-      ticketsArray.push({
-        name: mainTicket.name.trim(),
-        price: parseFloat(mainTicket.fee.trim()) || 0,
-      });
-
-      // Add variations
-      for (const variation of ticketVariations) {
-        if (!variation.name.trim()) continue;
-        ticketsArray.push({
-          name: variation.name.trim(),
-          price: parseFloat(variation.fee.trim()) || 0,
-        });
-      }
-
-      formData.append("tickets", JSON.stringify(ticketsArray));
-
-      // Append ticket images with indexed keys
-      if (mainTicket.image && typeof mainTicket.image !== "string") {
-        formData.append("tickets[0][ticket_image]", mainTicket.image);
-      }
-
-      ticketVariations.forEach((variation, index) => {
-        if (variation.image && typeof variation.image !== "string") {
-          formData.append(`tickets[${index + 1}][ticket_image]`, variation.image);
-        }
-      });
+      // Backend expects a "tickets" field as JSON string (can be empty array for now)
+      formData.append("tickets", JSON.stringify([]));
 
       await createEvent(formData).unwrap();
 
       setSuccess(true);
-      toast.success("Event and tickets created successfully!");
+      toast.success("Event created successfully!");
     } catch (err: unknown) {
       const e = err as { data?: { message?: string }; message?: string };
       toast.error(e?.data?.message || e?.message || "Failed to create event");
@@ -446,8 +278,6 @@ export default function CreateEventPage() {
     setTime(""); setLocation("");
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(null); setImagePreview(null);
-    setMainTicket({ name: "", fee: "", image: "" });
-    setTicketVariations([{ id: Date.now(), name: "", fee: "", image: "" }]);
     setErrors({}); setTouched({}); setStep(0); setSuccess(false);
   };
 
@@ -485,12 +315,13 @@ export default function CreateEventPage() {
 
         {/* ── STEP 0: Details ── */}
         {step === 0 && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-900">Event Details</h2>
               <p className="text-sm text-gray-400 mt-1">Start with the basics — what's your event about?</p>
             </div>
 
+            {/* Title */}
             <FieldWrapper
               label="Title"
               required
@@ -511,6 +342,7 @@ export default function CreateEventPage() {
               </div>
             </FieldWrapper>
 
+            {/* Description */}
             <FieldWrapper
               label="Description"
               required
@@ -532,12 +364,13 @@ export default function CreateEventPage() {
 
         {/* ── STEP 1: When & Where ── */}
         {step === 1 && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-900">When & Where</h2>
               <p className="text-sm text-gray-400 mt-1">Set the date, time, and location of your event.</p>
             </div>
 
+            {/* Date + Time */}
             <FieldWrapper
               label="Date & Time"
               required
@@ -567,6 +400,7 @@ export default function CreateEventPage() {
                 </div>
               </div>
 
+              {/* Date preview pill */}
               {date && time && !errors.date && (
                 <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1E35C8]/8 text-[#1E35C8] text-xs font-medium">
                   <CalendarDays size={11} />
@@ -582,6 +416,7 @@ export default function CreateEventPage() {
               )}
             </FieldWrapper>
 
+            {/* Location */}
             <FieldWrapper
               label="Location"
               required
@@ -604,7 +439,7 @@ export default function CreateEventPage() {
 
         {/* ── STEP 2: Media ── */}
         {step === 2 && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-900">Event Cover</h2>
               <p className="text-sm text-gray-400 mt-1">
@@ -617,6 +452,7 @@ export default function CreateEventPage() {
                 Cover Image <span className="text-gray-400 font-normal normal-case">(optional)</span>
               </label>
 
+              {/* Upload Zone */}
               <div
                 onClick={() => document.getElementById("event-image-input")?.click()}
                 onDragOver={(e) => { e.preventDefault(); }}
@@ -637,6 +473,7 @@ export default function CreateEventPage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
                     handleImageSelect(file);
+                    // reset input so same file can be re-selected
                     e.currentTarget.value = "";
                   }}
                 />
@@ -659,6 +496,7 @@ export default function CreateEventPage() {
 
               <ImagePreview preview={imagePreview} onClear={() => handleImageSelect(null)} />
 
+              {/* Fallback empty state when nothing selected */}
               {!imagePreview && (
                 <div className="mt-3 rounded-xl border border-gray-100 bg-white p-4 text-center text-xs text-gray-400">
                   No image selected yet — your event will use a default placeholder.
@@ -712,106 +550,6 @@ export default function CreateEventPage() {
           </div>
         )}
 
-        {/* ── STEP 3: Tickets ── */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Create Tickets</h2>
-              <p className="text-sm text-gray-400 mt-1">
-                Set up ticket types and pricing for your event. At least one ticket is required.
-              </p>
-            </div>
-
-            {/* Main Ticket */}
-            <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-[#1E35C8]/10 flex items-center justify-center">
-                  <Ticket size={16} className="text-[#1E35C8]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900">Main Ticket</h3>
-                  <p className="text-xs text-gray-400">Required — the primary ticket for your event</p>
-                </div>
-              </div>
-              <TicketForm values={mainTicket} onChange={updateMainTicket} />
-            </div>
-
-            {/* Ticket Variations */}
-            <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                    <Plus size={16} className="text-orange-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Ticket Variations</h3>
-                    <p className="text-xs text-gray-400">Optional — add different ticket tiers</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                {ticketVariations.map((v, i) => (
-                  <div key={v.id} className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
-                        <span className="text-xs text-gray-500">Variation {i + 1}</span>
-                      </div>
-                      {ticketVariations.length > 1 && (
-                        <button
-                          onClick={() => removeVariation(v.id)}
-                          className="text-gray-300 hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                    </div>
-                    <TicketForm
-                      values={v}
-                      onChange={(field, value) => updateVariation(v.id, field, value)}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={addVariation}
-                className="mt-4 flex items-center gap-2 text-sm text-[#1E35C8] font-medium hover:text-[#1a2eb0] transition-colors"
-              >
-                <Plus size={16} />
-                Add variation
-              </button>
-            </div>
-
-            {/* Ticket summary */}
-            <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Ticket Summary</p>
-              {mainTicket.name && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Ticket size={14} className="text-[#1E35C8]" />
-                    <span className="text-sm font-medium text-gray-800">{mainTicket.name}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">₦{mainTicket.fee || "0"}</span>
-                </div>
-              )}
-              {ticketVariations.filter(v => v.name).map((v, i) => (
-                <div key={v.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
-                    <span className="text-sm font-medium text-gray-800">{v.name}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">₦{v.fee || "0"}</span>
-                </div>
-              ))}
-              {!mainTicket.name && ticketVariations.filter(v => v.name).length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-2">No tickets configured yet</p>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* ── Navigation buttons ── */}
         <div className={`flex mt-10 gap-3 ${step > 0 ? "justify-between" : "justify-end"}`}>
           {step > 0 && (
@@ -824,7 +562,7 @@ export default function CreateEventPage() {
             </button>
           )}
 
-          {step < 3 ? (
+          {step < 2 ? (
             <button
               type="button"
               onClick={handleNext}
